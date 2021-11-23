@@ -1,20 +1,19 @@
 # We import all our dependencies.
-import cv2 as cv
+import argparse
 import os
+import cv2 as cv
 import numpy as np 
 import tifffile as tif
 from detect_delimiter import detect
 from n2v.models import N2V
 import ants
 from skimage import filters
-import argparse
 from skimage.registration import phase_cross_correlation as corr
 from scipy import ndimage
 from scipy.ndimage import gaussian_filter as gf
 import csv
 from skimage import io
 import skimage.transform as tr
-import scipy.io
 
 # functions
 def str2bool(v):
