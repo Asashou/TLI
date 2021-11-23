@@ -141,10 +141,9 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
 
 def phase_corr(fixed, moving, sigma):
     if fixed.shape > moving.shape:
-        fixed = fixed[tuple(map(slice, moving.shape))].shape
+        fixed = fixed[tuple(map(slice, moving.shape))]
     elif fixed.shape < moving.shape:
-        moving = moving[tuple(map(slice, fixed.shape))].shape
-        moving = moving[0:len(fixed)]
+        moving = moving[tuple(map(slice, fixed.shape))]
     fixed = gf(fixed, sigma=sigma)
     moving = gf(moving, sigma=sigma)
     print('applying pre-shift with phase correlation')
