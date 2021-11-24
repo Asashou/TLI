@@ -367,8 +367,8 @@ def main():
                        z_pixel=input_txt['z_pixel'])
         img = image[input_txt['ch_names'][0]]
         if 'n2v' in input_txt['steps']:
-            if ind == start and i>0:
-                continue
+            # if ind == start and i>0:
+            #     continue
             print('applying n2v on', save_file)
             img = N2V_predict(image=img,
                               model_name=input_txt['model_name'], 
@@ -377,8 +377,8 @@ def main():
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
         if 'clahe' in input_txt['steps']:
-            if ind == start and i>0:
-                continue
+            # if ind == start and i>0:
+            #     continue
             print('applying clahe on', save_file)
             img = apply_clahe(kernel_size=input_txt['kernel_size'], 
                               image=img, clipLimit=input_txt['clipLimit'], 
