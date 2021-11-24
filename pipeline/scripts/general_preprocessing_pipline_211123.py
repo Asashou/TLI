@@ -271,9 +271,11 @@ def main():
                 pass
         
         ants_ref_no = str(input_txt['ants_ref_no'])
+        print(ants_ref_no)
         try:
             for i in [0]:
                 file = [file for file in files_list if ants_ref_no in file][0]
+                print(file)
                 ref = io.imread(file)
                 print(os.path.basename(file), 'is used as ref for Antspy')
                 start = files_list.index(file)
@@ -283,7 +285,7 @@ def main():
                 ref = io.imread(files_list[0])
                 print(os.path.basename(files_list[0]), 'is used instead as ref for Antspy')
                 start = 0
-        if ind > 0:
+        if start > 0:
             scope1 = np.arange(start, -1, -1)
             scope2 = np.arange(start, len(files_list), 1)
             scope = np.concatenate((scope1, scope2))
