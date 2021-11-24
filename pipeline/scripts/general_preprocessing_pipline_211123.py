@@ -276,33 +276,47 @@ def main():
                 file = [file for file in files_list if ants_ref_no in file][0]
                 ref = io.imread(file)
                 print(os.path.basename(file), 'is used as ref for Antspy')
+                start = files_list.index(file)
         except:
             for i in [0]:
                 print("couldn't find the ref file specified in info.txt")
                 ref = io.imread(files_list[0])
-                print(os.path.basename(files_list[0]), 'is used instead as ref for Antspy'  'made the first/last image as ref')
+                print(os.path.basename(files_list[0]), 'is used instead as ref for Antspy')
+                start = 0
+        if ind > 0:
+            scope1 = np.arange(start, -1, -1)
+            scope2 = np.arange(start, len(files_list), 1)
+            scope = np.concatenate((scope1, scope2))
+        else:
+            scope = np.arange(0,len(files_list),1)
+        print('registration seg.', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
         ants_shift = {i:{} for i in range(len(input_txt['drift_corr']))}
         if 'preshift' in input_txt['steps']:
-            pre_ref = io.imread(files_list[0])
-            pre_ref = split_convert(pre_ref, input_txt['ch_names'])
             pre_shifts = {}
-            current_shift = list()
 
-    for ind, file in enumerate(files_list):
+    else:
+        scope = np.arange(0,len(files_list),1)
+
+    for i, ind in enumerate(scope):
+        file = files_list[ind]
         save_file = os.path.basename(file)
         print(ind,'working on ',save_file)
         image = io.imread(file)
         image = split_convert(image, input_txt['ch_names'])
         if 'ants' in input_txt['steps']:
             if 'preshift' in input_txt['steps']:
-                pre_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
-                                             image[input_txt['ch_names'][-1]], input_txt['sigma'])
-                pre_ref = image.copy()
-                current_shift = sum([val for val in pre_shifts.values()])
+                if ind == start:
+                    pre_ref = ref.copy()
+                    current_shift = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
+                else:
+                    pre_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
+                                                image[input_txt['ch_names'][-1]], input_txt['sigma'])
+                    current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind])]
+                    pre_ref = image.copy()
+                    for ch in image.keys():
+                        image[ch] = ndimage.shift(image[ch], current_shift)
                 print('current pre_shift', current_shift)
-                for ch in image.keys():
-                    image[ch] = ndimage.shift(image[ch], current_shift)
                 if input_txt['save_pre_shift'] == True:
                     final = np.concatenate((np.empty_like(image[input_txt['ch_names'][0]]), 
                                             np.empty_like(image[input_txt['ch_names'][0]])))
@@ -312,30 +326,38 @@ def main():
                     save_image(name, final, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
 
             for i, drift_t in enumerate(input_txt['drift_corr']): 
-                print('applying antspy with method',drift_t,'on file',save_file)
-                try:
-                    metric_t = input_txt['metric'][1]
-                except:
-                    metric_t = 'mattes'
-                image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
-                                                                ch_names=input_txt['ch_names'],
-                                                                metric=metric_t, 
-                                                                reg_iterations=parameters['reg_iterations'], 
-                                                                aff_iterations=parameters['aff_iterations'], 
-                                                                aff_shrink_factors=parameters['aff_shrink_factors'], 
-                                                                aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
-                                                                grad_step=parameters['grad_step'], 
-                                                                flow_sigma=parameters['flow_sigma'], 
-                                                                total_sigma=parameters['total_sigma'],
-                                                                aff_sampling=parameters['aff_sampling'], 
-                                                                syn_sampling=parameters['syn_sampling'], 
-                                                                xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-                                                                save=True, save_path=input_txt['save_path'],
-                                                                save_file=save_file)
-            # ########### chnaging ref to shifted image every X runs/files based on reset_ref
-            if ind % input_txt['ref_reset'] == 0:
-                print('changing the ref image')
-                ref = image.copy()
+                if ind == start:
+                    for ch, img in image.items():
+                        save_name = input_txt['save_path']+drift_t+'_'+ch+'_'+save_file
+                        save_image(save_name, img, 
+                                   xy_pixel=input_txt['xy_pixel'], 
+                                   z_pixel=input_txt['z_pixel'])
+                    print(save_file, 'was saved without applying ants on itself')
+                else:
+                    print('applying antspy with method',drift_t,'on file',save_file)
+                    try:
+                        metric_t = input_txt['metric'][1]
+                    except:
+                        metric_t = 'mattes'
+                    image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
+                                                                    ch_names=input_txt['ch_names'],
+                                                                    metric=metric_t, 
+                                                                    reg_iterations=parameters['reg_iterations'], 
+                                                                    aff_iterations=parameters['aff_iterations'], 
+                                                                    aff_shrink_factors=parameters['aff_shrink_factors'], 
+                                                                    aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
+                                                                    grad_step=parameters['grad_step'], 
+                                                                    flow_sigma=parameters['flow_sigma'], 
+                                                                    total_sigma=parameters['total_sigma'],
+                                                                    aff_sampling=parameters['aff_sampling'], 
+                                                                    syn_sampling=parameters['syn_sampling'], 
+                                                                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                    save=True, save_path=input_txt['save_path'],
+                                                                    save_file=save_file)
+                # ########### chnaging ref to shifted image every X runs/files based on reset_ref
+                if ind % input_txt['ref_reset'] == 0:
+                    print('changing the ref image')
+                    ref = image.copy()
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
             name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+save_file
             save_image(name, image[input_txt['ch_names'][-1]], 
@@ -343,6 +365,8 @@ def main():
                        z_pixel=input_txt['z_pixel'])
         img = image[input_txt['ch_names'][0]]
         if 'n2v' in input_txt['steps']:
+            if ind == start and i>0:
+                continue
             print('applying n2v on', save_file)
             img = N2V_predict(image=img,
                               model_name=input_txt['model_name'], 
@@ -351,6 +375,8 @@ def main():
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
         if 'clahe' in input_txt['steps']:
+            if ind == start and i>0:
+                continue
             print('applying clahe on', save_file)
             img = apply_clahe(kernel_size=input_txt['kernel_size'], 
                               image=img, clipLimit=input_txt['clipLimit'], 
