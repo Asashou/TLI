@@ -1,6 +1,6 @@
-path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211113/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211113/4steps/
-group: 211113_brain2.2_LP40_P36_00
+path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211114/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211114/3steps/
+group: 211114_brain3.2_LP40_P36_0
 steps: all
 xy_pixel: 0.0764616
 z_pixel: 0.4
@@ -20,8 +20,8 @@ grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
 aff_sampling: 32
-reg_iterations: 200, 60, 10
-aff_iterations: 5000, 3500, 3500, 100
+reg_iterations: 40, 20, 0
+aff_iterations: 2100, 1200, 1200, 10
 aff_shrink_factors: 6, 4, 2, 1
 aff_smoothing_sigmas: 3, 2, 1, 0
 script_run: general_preprocessing_pipline_211123.py

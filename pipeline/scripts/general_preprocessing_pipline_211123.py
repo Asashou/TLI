@@ -19,6 +19,7 @@ import psutil
 # functions
 
 def mem_use():
+    print('memory usage')
     print(psutil.cpu_percent())
     print(psutil.virtual_memory())
     print(dict(psutil.virtual_memory()._asdict()))
@@ -51,13 +52,14 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
         file_list.sort(reverse=order)    
     return file_list
 
-def img_limits(img, limit=4000, ddtype=np.float16):
+def img_limits(img, limit=4000, ddtype=np.uint16):
     print('image old limits', img.min(), img.max())
     img = img - img.min()
-    img = img/img.max()
-    img = img*limit
+    if limit != 0:
+        img = img/img.max()
+        img = img*limit
     img = img.astype(ddtype)
-    print('image new limits', img.min(), img.max())
+    print('image new limits and type', img.min(), img.max(), img.dtype)
     return img
 
 def split_convert(image, ch_names):
@@ -65,9 +67,10 @@ def split_convert(image, ch_names):
     image_ch = {}
     for ind, ch in enumerate(ch_names):
         image_ch[ch] = image[ind::len(ch_names)]
-        image_ch[ch] = img_limits(image_ch[ch])
     if len(ch_names) > 1:
         image_ch[ch_names[-1]] = filters.median(image_ch[ch_names[-1]])
+    for ch, img in image_ch.items():
+        image_ch[ch] = img_limits(img, limit=0)
     return image_ch
 
 def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
@@ -114,7 +117,7 @@ def antspy_drift(fixed, moving, shift):
         pass
     """shifts image based on ref and provided shift"""
     vol_shifted = ants.apply_transforms(fixed, moving, transformlist=shift).numpy()
-    vol_shifted = img_limits(vol_shifted)
+    # vol_shifted = img_limits(vol_shifted)
     return vol_shifted
 
 def apply_ants_channels(ref, image, drift_corr,  xy_pixel, 
@@ -149,10 +152,11 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
     for ch, img in image.items():
         image[ch] = antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
         if save == True:
+            img_save = img_limits(image[ch])
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            save_image(save_name, image[ch], xy_pixel=xy_pixel, z_pixel=z_pixel)       
+            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shift
 
 def phase_corr(fixed, moving, sigma):
@@ -174,7 +178,6 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
     file_name = os.path.basename(file)
     model = N2V(config=None, name=model_name, basedir=model_path)
     predict = model.predict(image, axes='ZYX', n_tiles=None)
-    predict = predict.astype(np.uint16)
     if save == True:
         if save_file == '':
             save_name = str(save_path+'N2V_'+file_name)
@@ -182,8 +185,8 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
             save_name = str(save_path+'N2V_'+save_file)
         if '.tif' not in save_name:
             save_name +='.tif'
-        predict = img_limits(predict)
-        save_image(save_name, predict, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        img_save = img_limits(predict)
+        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
 
 def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
@@ -192,7 +195,9 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
     if file != '':
         image = imread(file)
     if image.min()<0:
-        image = image - image.min()
+        image = (image - image.min())
+    image = image.astype(np.uint16)
+    print(image.dtype)
     file_name = os.path.basename(file)
     image_clahe= np.empty(image.shape)
     clahe_mask = cv.createCLAHE(clipLimit=clipLimit, tileGridSize=kernel_size)
@@ -202,7 +207,6 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
                             thresh=np.percentile(image_clahe[ind], 95), 
                             maxval=image_clahe[ind].max(), 
                             type= cv.THRESH_TOZERO)[1]
-        image_clahe = img_limits(image_clahe)
     if save == True:
         if save_file == '':
             save_name = save_path+'clahe_'+file_name
@@ -210,7 +214,8 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
             save_name = save_path+'clahe_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        save_image(save_name, image_clahe, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        img_save = img_limits(image_clahe)
+        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_clahe
 ######################
 
@@ -307,7 +312,7 @@ def main():
             scope = np.concatenate((scope1, scope2))
         else:
             scope = np.arange(0,len(files_list),1)
-        print('registration seg.', scope) 
+        print('registration sequence:', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
         ants_shift = {i:{} for i in range(len(input_txt['drift_corr']))}
         if 'preshift' in input_txt['steps']:
@@ -402,6 +407,7 @@ def main():
                               save=True, save_path=input_txt['save_path'], 
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
         print('finished applying pipline for ', save_file)
+        mem_use()
 
     # saving preshift and shift matrices
     if 'ants' in input_txt['steps']: 

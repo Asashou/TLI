@@ -2,9 +2,9 @@
 #SBATCH -p gpu
 #SBATCH -t 47:00:00
 #SBATCH --exclusive
+#SBATCH --mem-per-gpu=60G
 #SBATCH -n 10
 #SBATCH -G 1
-#SBATCH --mem-per-gpu=60G
 
 module load anaconda3
 source activate preprocessing
