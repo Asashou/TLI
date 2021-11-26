@@ -20,10 +20,10 @@ import psutil
 
 def mem_use():
     print('memory usage')
-    print(psutil.cpu_percent())
-    print(psutil.virtual_memory())
+    print('cpu_percent', psutil.cpu_percent())
     print(dict(psutil.virtual_memory()._asdict()))
-    print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
+    print('percentage of used RAM', psutil.virtual_memory().percent)
+    print('percentage of available memory', psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
 
 def str2bool(v):
     """this function convert str to corresponding boolean value"""
@@ -271,6 +271,7 @@ def main():
         input_txt['metric'] = 'mattes'
 
     print(input_txt)
+    mem_use()
 
     #######
     files_list = get_file_names(input_txt['path_to_data'], 
