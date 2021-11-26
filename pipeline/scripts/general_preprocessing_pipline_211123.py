@@ -14,8 +14,16 @@ from scipy.ndimage import gaussian_filter as gf
 import csv
 from skimage import io
 import skimage.transform as tr
+import psutil
 
 # functions
+
+def mem_use():
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())
+    print(dict(psutil.virtual_memory()._asdict()))
+    print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
+
 def str2bool(v):
     """this function convert str to corresponding boolean value"""
     options = ("yes", "true", "t", 'y', 'no','false', 'n','f')
@@ -412,6 +420,7 @@ def main():
         for key, value in pre_shifts.items():
             writer.writerow([key, value])
         shift_file.close()
+    mem_use()
     
 if __name__ == '__main__':
     main()
