@@ -52,7 +52,7 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
         file_list.sort(reverse=order)    
     return file_list
 
-def img_limits(img, limit=4000, ddtype=np.uint16):
+def img_limits(img, limit=2000, ddtype=np.uint16):
     print('image old limits', img.min(), img.max())
     img = img - img.min()
     if limit != 0:
@@ -214,7 +214,7 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
             save_name = save_path+'clahe_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        img_save = img_limits(image_clahe)
+        img_save = img_limits(image_clahe, limit=0)
         save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_clahe
 ######################
