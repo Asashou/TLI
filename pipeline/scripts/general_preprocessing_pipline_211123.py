@@ -43,11 +43,21 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
         file_list.sort(reverse=order)    
     return file_list
 
+def img_limits(img, limit=4000, ddtype=np.float16):
+    print('image old limits', img.min(), img.max())
+    img = img - img.min()
+    img = img/img.max()
+    img = img*limit
+    img = img.astype(ddtype)
+    print('image new limits', img.min(), img.max())
+    return img
+
 def split_convert(image, ch_names):
     """deinterleave the image into dictionary of two channels"""
     image_ch = {}
     for ind, ch in enumerate(ch_names):
-        image_ch[ch] = image[ind::len(ch_names)] - image[ind::len(ch_names)].min()
+        image_ch[ch] = image[ind::len(ch_names)]
+        image_ch[ch] = img_limits(image_ch[ch])
     if len(ch_names) > 1:
         image_ch[ch_names[-1]] = filters.median(image_ch[ch_names[-1]])
     return image_ch
@@ -96,7 +106,7 @@ def antspy_drift(fixed, moving, shift):
         pass
     """shifts image based on ref and provided shift"""
     vol_shifted = ants.apply_transforms(fixed, moving, transformlist=shift).numpy()
-    vol_shifted = (vol_shifted - vol_shifted.min()).astype(np.uint16)
+    vol_shifted = img_limits(vol_shifted)
     return vol_shifted
 
 def apply_ants_channels(ref, image, drift_corr,  xy_pixel, 
@@ -130,8 +140,6 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
     print(shift['fwdtransforms'])
     for ch, img in image.items():
         image[ch] = antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
-        print('ref extreems after ants', type(image[ch]))
-        print(image[ch].min(), image[ch].max())
         if save == True:
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
@@ -166,7 +174,7 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
             save_name = str(save_path+'N2V_'+save_file)
         if '.tif' not in save_name:
             save_name +='.tif'
-        predict = (predict - predict.min()).astype(np.uint16)
+        predict = img_limits(predict)
         save_image(save_name, predict, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
 
@@ -186,7 +194,7 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
                             thresh=np.percentile(image_clahe[ind], 95), 
                             maxval=image_clahe[ind].max(), 
                             type= cv.THRESH_TOZERO)[1]
-        image_clahe = (image_clahe - image_clahe.min()).astype(np.uint16)
+        image_clahe = img_limits(image_clahe)
     if save == True:
         if save_file == '':
             save_name = save_path+'clahe_'+file_name
