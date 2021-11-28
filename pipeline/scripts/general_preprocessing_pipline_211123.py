@@ -161,13 +161,23 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
 
 def phase_corr(fixed, moving, sigma):
     if fixed.shape > moving.shape:
+        print('fixed image is larger than moving', fixed.shape, moving.shape)
         fixed = fixed[tuple(map(slice, moving.shape))]
+        print('fixed image resized to', fixed.shape)
     elif fixed.shape < moving.shape:
+        print('fixed image is smaller than moving', fixed.shape, moving.shape)
         moving = moving[tuple(map(slice, fixed.shape))]
+        print('moving image resized to', moving.shape)
     fixed = gf(fixed, sigma=sigma)
     moving = gf(moving, sigma=sigma)
     print('applying pre-shift with phase correlation')
-    shift, error, diffphase = corr(fixed, moving)
+    try:
+        for i in [0]:
+            shift, error, diffphase = corr(fixed, moving)
+    except:
+        for i in [0]:
+            shift, error, diffphase = np.zeros(len(moving)), 0, 0
+            print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
 
 def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', save=True, save_path='', save_file=''):
