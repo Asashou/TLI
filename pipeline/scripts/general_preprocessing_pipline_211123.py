@@ -148,7 +148,7 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
                         total_sigma=total_sigma,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
-    print(shift['fwdtransforms'])
+    print(shift)
     for ch, img in image.items():
         image[ch] = antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
         if save == True:
