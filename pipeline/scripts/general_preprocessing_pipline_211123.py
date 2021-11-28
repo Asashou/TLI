@@ -15,6 +15,7 @@ import csv
 from skimage import io
 import skimage.transform as tr
 import psutil
+import gc
 
 # functions
 
@@ -447,7 +448,14 @@ def main():
                               save=True, save_path=input_txt['save_path'], 
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
         print('finished applying pipline for ', save_file)
+        print('memory usage before gc.collect')
         mem_use()
+        del image, img
+        gc.collect()
+        print('memory usage after gc.collect')
+        mem_use()        
+
+
 
     # saving preshift and shift matrices
     if 'ants' in input_txt['steps']: 
