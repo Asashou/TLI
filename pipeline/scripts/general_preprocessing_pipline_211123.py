@@ -121,7 +121,7 @@ def antspy_drift(fixed, moving, shift):
     return vol_shifted
 
 def apply_ants_channels(ref, image, drift_corr,  xy_pixel, 
-                        z_pixel, ch_names,
+                        z_pixel, ch_names, ref_ch=-1,
                         metric='mattes',
                         reg_iterations=(40, 20, 0), 
                         aff_iterations=(2100, 1200, 1200, 10), 
@@ -139,7 +139,7 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
             pass
     for ch, value in image.items():
         image[ch]= ants.from_numpy(np.float32(value))
-    shift = antspy_regi(ref[ch_names[-1]], image[ch_names[-1]], drift_corr, metric,
+    shift = antspy_regi(ref[ch_names[ref_ch]], image[ch_names[ref_ch]], drift_corr, metric,
                         reg_iterations=reg_iterations, 
                         aff_iterations=aff_iterations, 
                         aff_shrink_factors=aff_shrink_factors, 
@@ -265,7 +265,7 @@ def main():
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['preshift', 'ants', 'n2v', 'clahe']
+        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe']
     
     if 'metric' not in input_txt:
         input_txt['metric'] = 'mattes'
@@ -318,11 +318,13 @@ def main():
         ants_shift = {i:{} for i in range(len(input_txt['drift_corr']))}
         if 'preshift' in input_txt['steps']:
             pre_shifts = {}
+        if 'postshift' in input_txt['steps']:
+            post_shifts = {}
 
     else:
         scope = np.arange(0,len(files_list),1)
 
-    for i, ind in enumerate(scope):
+    for t, ind in enumerate(scope):
         file = files_list[ind]
         save_file = os.path.basename(file)
         print(ind,'working on ',save_file)
@@ -360,12 +362,12 @@ def main():
                 else:
                     print('applying antspy with method',drift_t,'on file',save_file)
                     try:
-                        metric_t = input_txt['metric'][1]
+                        metric_t = input_txt['metric'][i]
                     except:
                         metric_t = 'mattes'
                     image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
                                                                     ch_names=input_txt['ch_names'],
-                                                                    metric=metric_t, 
+                                                                    metric=metric_t, ref_ch=-1,
                                                                     reg_iterations=parameters['reg_iterations'], 
                                                                     aff_iterations=parameters['aff_iterations'], 
                                                                     aff_shrink_factors=parameters['aff_shrink_factors'], 
@@ -382,6 +384,33 @@ def main():
                 if ind % input_txt['ref_reset'] == 0:
                     print('changing the ref image')
                     ref = image.copy()
+            if 'postshift' in input_txt['steps']:
+                save_file_p = 'rGFP_'+save_file
+                if ind == start:
+                    for ch, img in image.items():
+                        save_name = input_txt['save_path']+'Rigid_'+ch+'_'+save_file_p
+                        save_image(save_name, img, 
+                                   xy_pixel=input_txt['xy_pixel'], 
+                                   z_pixel=input_txt['z_pixel'])
+                    print(save_file, 'was saved without applying ants on itself')
+                else:
+                    print('applying antspy with method','Rigid','on green_ch of file',save_file)
+                    metric_t = 'meansquares'
+                    image, post_shifts[ind] = apply_ants_channels(ref=ref, image=image, drift_corr='Rigid', 
+                                                                    ch_names=input_txt['ch_names'],
+                                                                    metric=metric_t, ref_ch=0,
+                                                                    reg_iterations=parameters['reg_iterations'], 
+                                                                    aff_iterations=parameters['aff_iterations'], 
+                                                                    aff_shrink_factors=parameters['aff_shrink_factors'], 
+                                                                    aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
+                                                                    grad_step=parameters['grad_step'], 
+                                                                    flow_sigma=parameters['flow_sigma'], 
+                                                                    total_sigma=parameters['total_sigma'],
+                                                                    aff_sampling=parameters['aff_sampling'], 
+                                                                    syn_sampling=parameters['syn_sampling'], 
+                                                                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                    save=True, save_path=input_txt['save_path'],
+                                                                    save_file=save_file_p)                
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
             name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+save_file
             save_image(name, image[input_txt['ch_names'][-1]], 
