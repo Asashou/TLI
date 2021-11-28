@@ -80,10 +80,10 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': 'ZYX'})
 
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
-                reg_iterations=(40, 20, 0), 
-                aff_iterations=(2100, 1200, 1200, 10), 
-                aff_shrink_factors=(6, 4, 2, 1), 
-                aff_smoothing_sigmas=(3, 2, 1, 0),
+                reg_iterations=(40,20,0), 
+                aff_iterations=(2100,1200,1200,10), 
+                aff_shrink_factors=(6,4,2,1), 
+                aff_smoothing_sigmas=(3,2,1,0),
                 grad_step=0.2, flow_sigma=3, total_sigma=0,
                 aff_sampling=32, syn_sampling=32):
 
@@ -99,12 +99,13 @@ def antspy_regi(fixed, moving, drift_corr, metric='mattes',
     
     shift = ants.registration(fixed, moving, type_of_transform=drift_corr, 
                               aff_metric=metric, syn_metric=metric,
-                              reg_iterations=reg_iterations, 
-                              aff_iterations=aff_iterations, 
+                              reg_iterations=(reg_iterations[0],reg_iterations[1],reg_iterations[2]), 
+                              aff_iterations=(aff_iterations[0],aff_iterations[1],aff_iterations[2],aff_iterations[3]), 
                               aff_shrink_factors=aff_shrink_factors, 
                               aff_smoothing_sigmas=aff_smoothing_sigmas,
                               grad_step=grad_step, flow_sigma=flow_sigma, total_sigma=total_sigma,
                               aff_sampling=aff_sampling, syn_sampling=syn_sampling)
+    print(shift)
     return shift
 
 def antspy_drift(fixed, moving, shift):
@@ -149,7 +150,6 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
                         total_sigma=total_sigma,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
-    print(shift)
     for ch, img in image.items():
         image[ch] = antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
         if save == True:
