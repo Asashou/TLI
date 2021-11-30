@@ -101,11 +101,11 @@ def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                               aff_metric=metric, syn_metric=metric,
                               reg_iterations=(reg_iterations[0],reg_iterations[1],reg_iterations[2]), 
                               aff_iterations=(aff_iterations[0],aff_iterations[1],aff_iterations[2],aff_iterations[3]), 
-                              aff_shrink_factors=aff_shrink_factors, 
-                              aff_smoothing_sigmas=aff_smoothing_sigmas,
+                              aff_shrink_factors=(aff_shrink_factors[0],aff_shrink_factors[1],aff_shrink_factors[2],aff_shrink_factors[3]), 
+                              aff_smoothing_sigmas=(aff_smoothing_sigmas[0],aff_smoothing_sigmas[1],aff_smoothing_sigmas[2],aff_smoothing_sigmas[3]),
                               grad_step=grad_step, flow_sigma=flow_sigma, total_sigma=total_sigma,
                               aff_sampling=aff_sampling, syn_sampling=syn_sampling)
-    print(shift)
+    print(shift['fwdtransforms'])
     return shift
 
 def antspy_drift(fixed, moving, shift):
@@ -293,10 +293,10 @@ def main():
     if 'ants' in input_txt['steps']:
         parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
                       'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
-                      'syn_sampling':32, 'reg_iterations':(40, 20, 0), 
-                      'aff_iterations':(2100, 1200, 1200, 10), 
-                      'aff_shrink_factors':(6, 4, 2, 1), 
-                      'aff_smoothing_sigmas':(3, 2, 1, 0)}
+                      'syn_sampling':32, 'reg_iterations':(40,20,0), 
+                      'aff_iterations':(2100,1200,1200,10), 
+                      'aff_shrink_factors':(6,4,2,1), 
+                      'aff_smoothing_sigmas':(3,2,1,0)}
         for para in parameters.keys():
             try:
                 parameters[para] = input_txt[para]
@@ -379,8 +379,8 @@ def main():
                     image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
                                                                     ch_names=input_txt['ch_names'],
                                                                     metric=metric_t, ref_ch=-1,
-                                                                    reg_iterations=(reg_iterations[0],reg_iterations[1],reg_iterations[2]), 
-                                                                    aff_iterations=(aff_iterations[0],aff_iterations[1],aff_iterations[2],aff_iterations[3]), 
+                                                                    reg_iterations=parameters['reg_iterations'], 
+                                                                    aff_iterations=parameters['aff_iterations'], 
                                                                     aff_shrink_factors=parameters['aff_shrink_factors'], 
                                                                     aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
                                                                     grad_step=parameters['grad_step'], 
