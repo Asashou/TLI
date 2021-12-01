@@ -390,26 +390,25 @@ def main():
                                                                     syn_sampling=parameters['syn_sampling'], 
                                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                                     save=True, save_path=input_txt['save_path'],
-                                                                    save_file=save_file)
+                                                                    save_file=str(i+1)+save_file)
                 # ########### chnaging ref to shifted image every X runs/files based on reset_ref
                 if ind % input_txt['ref_reset'] == 0:
                     print('changing the ref image')
                     ref = image.copy()
             if 'postshift' in input_txt['steps']:
-                save_file_p = 'rGFP_'+save_file
+                # save_file_p = 'rGFP_'+save_file
                 if ind == start:
                     for ch, img in image.items():
-                        save_name = input_txt['save_path']+'Rigid_'+ch+'_'+save_file_p
+                        save_name = input_txt['save_path']+'Rigid_'+ch+'_'+str(i+1)+save_file
                         save_image(save_name, img, 
                                    xy_pixel=input_txt['xy_pixel'], 
                                    z_pixel=input_txt['z_pixel'])
                     print(save_file, 'was saved without applying ants on itself')
                 else:
                     print('applying antspy with method','Rigid','on green_ch of file',save_file)
-                    metric_t = 'meansquares'
                     image, post_shifts[ind] = apply_ants_channels(ref=ref, image=image, drift_corr='Rigid', 
                                                                     ch_names=input_txt['ch_names'],
-                                                                    metric=metric_t, ref_ch=0,
+                                                                    metric='meansquares', ref_ch=0,
                                                                     reg_iterations=parameters['reg_iterations'], 
                                                                     aff_iterations=parameters['aff_iterations'], 
                                                                     aff_shrink_factors=parameters['aff_shrink_factors'], 
@@ -421,7 +420,10 @@ def main():
                                                                     syn_sampling=parameters['syn_sampling'], 
                                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                                     save=True, save_path=input_txt['save_path'],
-                                                                    save_file=save_file_p)                
+                                                                    save_file=str(i+1)+save_file) 
+                if ind % input_txt['ref_reset'] == 0:
+                    print('changing the ref image')
+                    ref = image.copy()              
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
             name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+save_file
             save_image(name, image[input_txt['ch_names'][-1]], 
