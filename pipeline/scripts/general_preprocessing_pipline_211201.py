@@ -405,10 +405,10 @@ def main():
                                 z_pixel=input_txt['z_pixel'])
                     print(save_file, 'was saved without applying ants on itself')
                     # post_ref = ref.copy()
-                    post_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
+                    post_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
                 else:
-                    post_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
-                                                image[input_txt['ch_names'][-1]], input_txt['sigma'])
+                    post_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][0]], 
+                                                image[input_txt['ch_names'][0]], input_txt['sigma'])
                     current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind])]
                     # pre_ref = image.copy()
                     for ch in image.keys():
