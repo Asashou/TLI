@@ -346,6 +346,7 @@ def main():
                 if ind == start:
                     pre_ref = ref.copy()
                     pre_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
+                    current_shift = pre_shifts[ind]
                 else:
                     pre_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
                                                 image[input_txt['ch_names'][-1]], input_txt['sigma'])
@@ -406,6 +407,7 @@ def main():
                     print(save_file, 'was saved without applying ants on itself')
                     # post_ref = ref.copy()
                     post_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
+                    current_shift = post_shifts[ind]
                 else:
                     post_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][0]], 
                                                 image[input_txt['ch_names'][0]], input_txt['sigma'])
