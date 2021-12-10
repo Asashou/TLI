@@ -17,7 +17,10 @@ import skimage.transform as tr
 import psutil
 import gc
 from PIL import Image
-
+from scipy import spatial
+from scipy import stats
+import matplotlib.pyplot as plt
+from sklearn import metrics
 # functions
 
 def mem_use():
@@ -63,6 +66,14 @@ def img_limits(img, limit=2000, ddtype=np.uint16):
     img = img.astype(ddtype)
     print('image new limits and type', img.min(), img.max(), img.dtype)
     return img
+
+def img_subset(img, subset):
+    print('subsetting the image')
+    try:
+        subset_img = img[subset[0]:subset[1],subset[2]:subset[3],subset[4]:subset[5]]
+    except:
+        print('failed to subset image')
+    return subset_img
 
 def split_convert(image, ch_names):
     """deinterleave the image into dictionary of two channels"""
@@ -181,6 +192,12 @@ def phase_corr(fixed, moving, sigma):
             shift, error, diffphase = np.zeros(len(moving)), 0, 0
             print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
+
+def cosine_check(ref, image):
+    check = sum(metrics.pairwise.cosine_similarity(image.ravel().reshape(1,-1), 
+                           ref.ravel().reshape(1,-1)))[0]
+    print('cosine of image to ref is', check)
+    return check
 
 def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
@@ -304,9 +321,12 @@ def main():
                 parameters[para] = input_txt[para]
             except:
                 pass
-        
+        print(parameters)
+
+        if 'reg_subset' not in input_txt.keys():
+            input_txt['reg_subset'] = [0,0]
+
         ants_ref_no = str(input_txt['ants_ref_no'])
-        print(ants_ref_no)
         try:
             for i in [0]:
                 file = [file for file in files_list if ants_ref_no in file][0]
@@ -329,6 +349,12 @@ def main():
         print('registration sequence:', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
         ants_shift = {i:{} for i in range(len(input_txt['drift_corr']))}
+        cos_check = {i:{} for i in range(len(input_txt['drift_corr']))}
+        temp_check = 0
+        if sum(input_txt['reg_subset']) != 0:
+            print('image subset indecies', input_txt['reg_subset'])
+            for ch, img in ref.items():
+                ref[ch] = img_subset(img, input_txt['reg_subset'])
         if 'preshift' in input_txt['steps']:
             pre_shifts = {}
         if 'postshift' in input_txt['steps']:
@@ -337,7 +363,7 @@ def main():
     else:
         scope = np.arange(0,len(files_list),1)
 
-    for t, ind in enumerate(scope):
+    for ind in scope:
         file = files_list[ind]
         save_file = os.path.basename(file)
         print(ind,'working on ',save_file)
@@ -364,6 +390,10 @@ def main():
                     final[1::2]= image[input_txt['ch_names'][-1]]
                     name = input_txt['save_path']+'PhaseCorr_'+save_file
                     save_image(name, final, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
+            
+            if sum(input_txt['reg_subset']) != 0:
+                for ch, img in image.items():
+                    image[ch] = img_subset(img, input_txt['reg_subset'])
 
             for i, drift_t in enumerate(input_txt['drift_corr']): 
                 if ind == start:
@@ -372,6 +402,7 @@ def main():
                         save_image(save_name, img, 
                                    xy_pixel=input_txt['xy_pixel'], 
                                    z_pixel=input_txt['z_pixel'])
+                    cos_ref = image[input_txt['ch_names'][0]]
                     print(save_file, 'was saved without applying ants on itself')
                 else:
                     print('applying antspy with method',drift_t,'on file',save_file)
@@ -379,27 +410,44 @@ def main():
                         metric_t = input_txt['metric'][i]
                     except:
                         metric_t = 'mattes'
-                    image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
-                                                                    ch_names=input_txt['ch_names'],
-                                                                    metric=metric_t, ref_ch=-1,
-                                                                    reg_iterations=parameters['reg_iterations'], 
-                                                                    aff_iterations=parameters['aff_iterations'], 
-                                                                    aff_shrink_factors=parameters['aff_shrink_factors'], 
-                                                                    aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
-                                                                    grad_step=parameters['grad_step'], 
-                                                                    flow_sigma=parameters['flow_sigma'], 
-                                                                    total_sigma=parameters['total_sigma'],
-                                                                    aff_sampling=parameters['aff_sampling'], 
-                                                                    syn_sampling=parameters['syn_sampling'], 
-                                                                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-                                                                    save=True, save_path=input_txt['save_path'],
-                                                                    save_file=str(i+1)+save_file)
+                    if temp_check < 0.95:
+                        temp_image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
+                                                                        ch_names=input_txt['ch_names'],
+                                                                        metric=metric_t, ref_ch=-1,
+                                                                        reg_iterations=parameters['reg_iterations'], 
+                                                                        aff_iterations=parameters['aff_iterations'], 
+                                                                        aff_shrink_factors=parameters['aff_shrink_factors'], 
+                                                                        aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
+                                                                        grad_step=parameters['grad_step'], 
+                                                                        flow_sigma=parameters['flow_sigma'], 
+                                                                        total_sigma=parameters['total_sigma'],
+                                                                        aff_sampling=parameters['aff_sampling'], 
+                                                                        syn_sampling=parameters['syn_sampling'], 
+                                                                        xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                        save=True, save_path=input_txt['save_path'],
+                                                                        save_file=str(i+1)+save_file)
+                        temp_check = cosine_check(cos_ref, temp_image[input_txt['ch_names'][0]])
+                        cos_check[i][ind] = temp_check
+                        try:
+                            for i in [0]:
+                                if temp_check > cos_check[i-1][ind]:
+                                    print('new regi had better cosine similarity', temp_check, 'from previous', cos_check[i-1][ind])
+                                    image = temp_image.copy()
+                                else:
+                                    print('new regi had worse cosine similarity', temp_check, 'from previous', cos_check[i-1][ind])
+                                    print('this regi step was skipped')
+                        except:
+                            for i in [0]:
+                                image = temp_image.copy()
+                                print('cosine check was not applied')
+                        cos_ref = image[input_txt['ch_names'][0]].copy()
+                
                 # ########### chnaging ref to shifted image every X runs/files based on reset_ref
-                if ind % input_txt['ref_reset'] == 0:
-                    print('changing the ref image')
-                    ref = image.copy()
-            
-            if 'postshift' in input_txt['steps']:
+            if ind % input_txt['ref_reset'] == 0:
+                print('changing the ref image')
+                ref = image.copy()
+            temp_check = 0
+            if 'postshift' in input_txt['steps'] and temp_check<0.92:
                 if ind == start:
                     for ch, img in image.items():
                         save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+save_file
@@ -425,37 +473,7 @@ def main():
                         save_image(save_name, image[ch], 
                                    xy_pixel=input_txt['xy_pixel'], 
                                    z_pixel=input_txt['z_pixel'])  
-                print('current post_shift', current_shift_2)            
-            
-            # if 'postshift' in input_txt['steps']:
-            #     # save_file_p = 'rGFP_'+save_file
-            #     if ind == start:
-            #         for ch, img in image.items():
-            #             save_name = input_txt['save_path']+'Rigid_'+ch+'_'+str(i+1)+save_file
-            #             save_image(save_name, img, 
-            #                        xy_pixel=input_txt['xy_pixel'], 
-            #                        z_pixel=input_txt['z_pixel'])
-            #         print(save_file, 'was saved without applying ants on itself')
-            #     else:
-            #         print('applying antspy with method','Rigid','on green_ch of file',save_file)
-            #         image, post_shifts[ind] = apply_ants_channels(ref=ref, image=image, drift_corr='Rigid', 
-            #                                                         ch_names=input_txt['ch_names'],
-            #                                                         metric='meansquares', ref_ch=0,
-            #                                                         reg_iterations=parameters['reg_iterations'], 
-            #                                                         aff_iterations=parameters['aff_iterations'], 
-            #                                                         aff_shrink_factors=parameters['aff_shrink_factors'], 
-            #                                                         aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
-            #                                                         grad_step=parameters['grad_step'], 
-            #                                                         flow_sigma=parameters['flow_sigma'], 
-            #                                                         total_sigma=parameters['total_sigma'],
-            #                                                         aff_sampling=parameters['aff_sampling'], 
-            #                                                         syn_sampling=parameters['syn_sampling'], 
-            #                                                         xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-            #                                                         save=True, save_path=input_txt['save_path'],
-            #                                                         save_file=str(i+1)+save_file) 
-            #     if ind % input_txt['ref_reset'] == 0:
-            #         print('changing the ref image')
-            #         ref = image.copy()              
+                print('current post_shift', current_shift_2)                    
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
             name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+save_file
             save_image(name, image[input_txt['ch_names'][-1]], 
@@ -489,8 +507,6 @@ def main():
         print('memory usage after gc.collect')
         mem_use()        
 
-
-
     # saving preshift and shift matrices
     if 'ants' in input_txt['steps']: 
         shift_file = open(input_txt['save_path']+"ants_shifts.csv", "w")
@@ -502,13 +518,24 @@ def main():
                 pass    
         print('saved ants_shifts')
         shift_file.close()
+
+        checks_file = open(input_txt['save_path']+"cosine_checks.csv", "w")
+        writer = csv.writer(checks_file)
+        for key, value in cos_check.items():
+            try:
+                writer.writerow([key, value])
+            except:
+                pass    
+        print('saved cosine_checks')
+        checks_file.close()
+
     if 'preshift' in input_txt['steps']:                
         shift_file = open(input_txt['save_path']+"PhaseCorr_shifts.csv", "w")
         writer = csv.writer(shift_file)
         for key, value in pre_shifts.items():
             writer.writerow([key, value])
         shift_file.close()
-    mem_use()
+    
     
 if __name__ == '__main__':
     main()
