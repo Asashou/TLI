@@ -1,21 +1,21 @@
 ### python script applied and purpose of the run 
 script_run: general_pipline.py
-purpose: preprocessing session 211016 with pipeline 211210
+purpose: preprocessing session 211016 with pipeline from 211212
 
 ### provided paths: data_path, saving_path and n2v model path
-path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211016/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211016/regi6/
+path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211114/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211114/regi10/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
 ### data filtering parameters: name(group), channel names,subset
-group: 211016_brain2.2_LP40_P36__
-ch_names: GFP, Red
-reg_subset: 0,35,350,650,350,700
+group: 211114_brain3.2_LP40_P36_0
+ch_names: GFP, Red  ## if the images has one channel then also specify here (e.g:GFP)
+reg_subset: 22,65,350,700,350,800  ##Z,Y,X slicing. In case no subset required, type 0,0
 
 ### preprocessing steps to apply
-steps: preshift, postshift, ants
+steps: all # all means prshift,ants,postshift,n2v,clahe
 
-### rotation and image_flip
+### rotation and image_flip (not implemented yet)
 rotat_O: 6
 Flip: false
 
@@ -32,19 +32,19 @@ model_name: n2v_3D_v6
 
 ### registration sequence
 reference_last: false
-ants_ref_no: 040.tif
-ref_reset: 100
+ants_ref_no: 01.tif
+ref_reset: 50
 
 ### registration parameters
 save_pre_shift: false
 sigma: 5
-drift_corr: Rigid, Affine
-metric: meansquares, meansquares
+drift_corr: Rigid, Affine, SyNRA
+metric: meansquares, meansquares, CC
 grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
 aff_sampling: 32
-reg_iterations: 160,80,10
-aff_iterations: 3600,1800,1800,60
+reg_iterations: 320,160,60
+aff_iterations: 5000,2400,2400,120
 aff_shrink_factors: 6,4,2,1
 aff_smoothing_sigmas: 3,2,1,0

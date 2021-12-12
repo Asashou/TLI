@@ -38,6 +38,64 @@ def str2bool(v):
     else:
         return v
 
+def txt2dict(path):
+    print('getting info from', path)
+    with open(path) as f:
+        lines = f.readlines()
+    for line in lines:
+        if line[0] == '#':
+            lines.remove(line)
+    for ind, line in enumerate(lines):
+        if '#' in line:
+            lines[ind] = line[0:line.index('#')]
+        elif '\n' in line:
+            lines[ind] = line.replace('\n','')
+    for line in lines:
+        if line == '':
+            lines.remove(line)
+    delimiter = detect(lines[0])
+    print(len(lines),'lines found in txt_file with', delimiter, 'as the delimiter')
+    try:
+        for i in [0]:
+            lines = [item.strip().rsplit(delimiter, 2) for item in lines]
+            input_txt = {item[0].strip(): item[1].strip() for item in lines}
+    except:
+        print('failed to read txt_file')
+    for key, val in input_txt.items():
+        if ',' in val:
+            try:
+                input_txt[key] = tuple(map(int, val.split(',')))
+            except:
+                try:
+                    input_txt[key] = [item.strip() for item in val.split(',')]
+                except:
+                    pass
+        else:
+            try:
+                input_txt[key] = float(val)
+            except:
+                input_txt[key] = str2bool(val)    
+    ### adding some default parameters if missing in info_txt
+    if type(input_txt['ch_names']) != list:
+        input_txt['ch_names'] = [input_txt['ch_names']]
+    if type(input_txt['drift_corr']) != list:
+        input_txt['drift_corr'] = [input_txt['drift_corr']]
+    if 'sigma' not in input_txt.keys():
+        input_txt['sigma'] = 0
+    if 'steps' not in input_txt.keys():
+        input_txt['steps'] = ['all']
+    if type(input_txt['steps']) == str:
+        input_txt['steps'] = [input_txt['steps'].lower()]
+    elif type(input_txt['steps']) == tuple:
+        input_txt['steps'] = [s.lower() for s in input_txt['steps']]
+    if 'all' in input_txt['steps']:
+        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe']
+    if 'metric' not in input_txt:
+        input_txt['metric'] = 'mattes'
+
+    print(input_txt)
+    return input_txt
+
 def get_file_names(path, group_by='', order=True, nested_files = False):
     """returns a list of all files' names in the given directory and its sub-folders
     the list can be filtered based on the 'group_by' str provided
@@ -257,51 +315,7 @@ def main():
     args = parser.parse_args()
     
     ##### this part is for reading variables' values and info.txt
-    with open(args.txt_path) as f:
-        lines = f.readlines()
-    delimiter = detect(lines[0])
-    lines = [item.strip().rsplit(delimiter, 2) for item in lines]
-    input_txt = {item[0].strip(): item[1].strip() for item in lines}
-    for key, val in input_txt.items():
-        if ',' in val:
-            try:
-                input_txt[key] = tuple(map(int, val.split(',')))
-            except:
-                try:
-                    input_txt[key] = [item.strip() for item in val.split(',')]
-                except:
-                    pass
-        else:
-            try:
-                input_txt[key] = float(val)
-            except:
-                input_txt[key] = str2bool(val)    
-    # globals().update(input_txt)
-    print('getting info from', args.txt_path)
-
-    if type(input_txt['ch_names']) != list:
-        input_txt['ch_names'] = [input_txt['ch_names']]
-    
-    if type(input_txt['drift_corr']) != list:
-        input_txt['drift_corr'] = [input_txt['drift_corr']]
-    
-    if 'sigma' not in input_txt.keys():
-        input_txt['sigma'] = 0
-
-    if 'steps' not in input_txt.keys():
-        input_txt['steps'] = ['all']
-    if type(input_txt['steps']) == str:
-        input_txt['steps'] = [input_txt['steps'].lower()]
-    elif type(input_txt['steps']) == tuple:
-        input_txt['steps'] = [s.lower() for s in input_txt['steps']]
-    if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe']
-    
-    if 'metric' not in input_txt:
-        input_txt['metric'] = 'mattes'
-
-    print(input_txt)
-    mem_use()
+    input_txt = txt2dict(args.txt_path)
 
     #######
     files_list = get_file_names(input_txt['path_to_data'], 
