@@ -1,22 +1,41 @@
+### python script applied and purpose of the run 
+script_run: general_pipline.py
+purpose: preprocessing session 211016 with pipeline 211210
+
+### provided paths: data_path, saving_path and n2v model path
 path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211016/
 save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211016/regi6/
+model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
+
+### data filtering parameters: name(group), channel names,subset
 group: 211016_brain2.2_LP40_P36__
+ch_names: GFP, Red
+reg_subset: 0,35,350,650,350,700
+
+### preprocessing steps to apply
 steps: preshift, postshift, ants
+
+### files metadata
 xy_pixel: 0.0764616
 z_pixel: 0.4
-ch_names: GFP, Red
-model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
-model_name: n2v_3D_v6
+
+### clahe parameters:
 clipLimit: 1
 kernel_size: 45, 45
-reg_subset: 0,35,350,650,350,700
-drift_corr: Rigid, Affine
-metric: meansquares, meansquares
+
+### n2v paramters:
+model_name: n2v_3D_v6
+
+### registration sequence
 reference_last: false
-save_pre_shift: false
-sigma: 5
 ants_ref_no: 040.tif
 ref_reset: 100
+
+### registration parameters
+save_pre_shift: false
+sigma: 5
+drift_corr: Rigid, Affine
+metric: meansquares, meansquares
 grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
@@ -25,5 +44,3 @@ reg_iterations: 160,80,10
 aff_iterations: 3600,1800,1800,60
 aff_shrink_factors: 6,4,2,1
 aff_smoothing_sigmas: 3,2,1,0
-script_run: general_pipline.py
-purpose: preprocessing session 211016 with pipeline 211210
