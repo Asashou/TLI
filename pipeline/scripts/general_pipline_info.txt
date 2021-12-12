@@ -15,6 +15,10 @@ reg_subset: 0,35,350,650,350,700
 ### preprocessing steps to apply
 steps: preshift, postshift, ants
 
+### rotation and image_flip
+rotat_O: 6
+Flip: false
+
 ### files metadata
 xy_pixel: 0.0764616
 z_pixel: 0.4
