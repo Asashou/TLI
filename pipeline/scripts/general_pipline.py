@@ -260,7 +260,8 @@ def antspy_drift(fixed, moving, shift):
         moving= moving.numpy()
     except:
         pass    
-    pre_check = check_similarity(fixed, moving)
+    check_ref = fixed.copy()
+    pre_check = check_similarity(check_ref, moving)
     try:
         fixed= ants.from_numpy(np.float32(fixed))
     except:
@@ -271,7 +272,7 @@ def antspy_drift(fixed, moving, shift):
         pass
     """shifts image based on ref and provided shift"""
     vol_shifted = ants.apply_transforms(fixed, moving, transformlist=shift).numpy()
-    post_check = check_similarity(fixed, vol_shifted)
+    post_check = check_similarity(check_ref, vol_shifted)
     print('similarity_check', pre_check, 'improved to', post_check)
     if (pre_check - post_check) < 0.1:
         vol_shifted = moving.copy()
