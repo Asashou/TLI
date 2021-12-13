@@ -40,6 +40,7 @@ save_pre_shift: false
 sigma: 5
 drift_corr: Rigid, Affine, SyNRA
 metric: meansquares, mattes, CC
+double_register: yes
 grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
