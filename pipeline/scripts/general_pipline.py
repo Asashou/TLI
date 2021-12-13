@@ -169,6 +169,43 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
     tif.imwrite(name, image, imagej=True, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': 'ZYX'})
 
+def mask_image(volume, return_mask = False ,sig = 2):
+    """
+    Create a binary mask from a 2 or 3-dimensional np.array.
+    Method normalizes the image, converts it to greyscale, then applies gaussian bluring (kernel width set to 2 by default, can be changed with sig parameter).
+    This is followed by thresholding the image using the isodata method and returning a binary mask. 
+    Parameters
+    ----------
+    image           np.array
+                    np.array of an image (2 or 3D)
+    return_mask     bool
+                    If False (default), the mask is subtracted from the original image. If True, a boolian array is returned, of the shape of the original image, as a mask. 
+    sig             Int
+                    kernel width for gaussian smoothing. set to 2 by default.
+    Returns
+    -------
+    mask            np.array
+                    Returns a binary np.array of equal shape to the original image, labeling the masked area.
+    """
+    image = volume.copy()
+    # if input image is 2D...
+    image = image.astype('float32')
+    # normalize to the range 0-1
+    image -= image.min()
+    image /= image.max()
+    # blur and grayscale before thresholding
+    blur = gaussian(image, sigma=sig)
+    # perform adaptive thresholding
+    t = threshold_otsu(blur.ravel())
+    mask = blur > t
+    # convert to bool
+    mask = np.array(mask, dtype=bool)
+    if return_mask == False:
+        image[mask==False] = 0
+        return image
+    else:
+        return mask
+
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 reg_iterations=(40,20,0), 
                 aff_iterations=(2100,1200,1200,10), 
