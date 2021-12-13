@@ -20,8 +20,11 @@ from PIL import Image
 from scipy import ndimage, spatial, stats
 import matplotlib.pyplot as plt
 from sklearn import metrics
-# functions
+from skimage.filters import gaussian, threshold_otsu
+from scipy import ndimage
+from tqdm import tqdm
 
+# functions
 def mem_use():
     print('memory usage')
     print('cpu_percent', psutil.cpu_percent())
@@ -419,8 +422,10 @@ def main():
             scope = np.arange(0,len(files_list),1)
         print('registration sequence:', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
-        ants_shift = {i:{} for i in range(len(input_txt['drift_corr']))}
-        cos_check = {i:{} for i in range(len(input_txt['drift_corr']))}
+        ants_shift = {str(i+1)+'_'+drift_t:{} for i, drift_t in enumerate(input_txt['drift_corr'])}
+        cos_check = {str(i+1)+'_'+drift_t:{} for i, drift_t in enumerate(input_txt['drift_corr'])}
+        cos_check['0_unregi'] = {} 
+        basic_check = 0
         temp_check = 0
         if sum(input_txt['reg_subset']) != 0:
             print('image subset indecies', input_txt['reg_subset'])
@@ -430,7 +435,6 @@ def main():
             pre_shifts = {}
         if 'postshift' in input_txt['steps']:
             post_shifts = {}
-
     else:
         scope = np.arange(0,len(files_list),1)
 
@@ -444,12 +448,12 @@ def main():
             if 'preshift' in input_txt['steps']:
                 if ind == start:
                     pre_ref = ref.copy()
-                    pre_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
-                    current_shift = pre_shifts[ind]
+                    pre_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
+                    current_shift = pre_shifts[file]
                 else:
-                    pre_shifts[ind] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
+                    pre_shifts[file] = phase_corr(pre_ref[input_txt['ch_names'][-1]], 
                                                 image[input_txt['ch_names'][-1]], input_txt['sigma'])
-                    current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind])]
+                    current_shift = [sum(x) for x in zip(current_shift, pre_shifts[file])]
                     pre_ref = image.copy()
                     for ch in image.keys():
                         image[ch] = ndimage.shift(image[ch], current_shift)
@@ -467,6 +471,7 @@ def main():
                     image[ch] = img_subset(img, input_txt['reg_subset'])
 
             for i, drift_t in enumerate(input_txt['drift_corr']): 
+                ants_step = str(i+1)+'_'+drift_t
                 if ind == start:
                     for ch, img in image.items():
                         save_name = input_txt['save_path']+drift_t+'_'+ch+'_'+save_file
@@ -482,7 +487,7 @@ def main():
                     except:
                         metric_t = 'mattes'
                     if temp_check < 0.95:
-                        temp_image, ants_shift[i][ind] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
+                        temp_image, ants_shift[ants_step][file] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
                                                                         ch_names=input_txt['ch_names'],
                                                                         metric=metric_t, ref_ch=-1,
                                                                         reg_iterations=parameters['reg_iterations'], 
@@ -498,7 +503,7 @@ def main():
                                                                         save=True, save_path=input_txt['save_path'],
                                                                         save_file=str(i+1)+save_file)
                         temp_check = cosine_check(cos_ref, temp_image[input_txt['ch_names'][0]])
-                        cos_check[i][ind] = temp_check
+                        cos_check[ants_step][file] = temp_check
                         try:
                             for i in [0]:
                                 if temp_check > cos_check[i-1][ind]:
@@ -582,33 +587,41 @@ def main():
 
     # saving preshift and shift matrices
     if 'ants' in input_txt['steps']: 
-        shift_file = open(input_txt['save_path']+"ants_shifts.csv", "w")
-        writer = csv.writer(shift_file)
-        for key, value in ants_shift.items():
-            try:
-                writer.writerow([key, value])
-            except:
-                pass    
-        print('saved ants_shifts')
-        shift_file.close()
+        shift_file = input_txt['save_path']+"ants_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['reg_step', 'file', 'ants_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for reg_step, shifts in ants_shift.items():
+                for file, ants_shift in shifts.items():
+                    writer.writerow({'reg_step': reg_step, 'file' : file, 'ants_shift' : ants_shift})
+        csvfile.close()
 
-        checks_file = open(input_txt['save_path']+"cosine_checks.csv", "w")
-        writer = csv.writer(checks_file)
-        for key, value in cos_check.items():
-            try:
-                writer.writerow([key, value])
-            except:
-                pass    
-        print('saved cosine_checks')
-        checks_file.close()
+        checks_file = input_txt['save_path']+"cosine_checks.csv"
+        with open(checks_file, 'w', newline='') as csvfile:
+            fieldnames = ['reg_step', 'file', 'cos_check']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for reg_step, checks in cos_check.items():
+                for file, cos_check in checks.items():
+                    writer.writerow({'reg_step': reg_step, 'file' : file, 'cos_check' : cos_check})
+        csvfile.close()
 
     if 'preshift' in input_txt['steps']:                
         shift_file = open(input_txt['save_path']+"PhaseCorr_shifts.csv", "w")
-        writer = csv.writer(shift_file)
+        fieldnames = ['file', 'phase_shift']
+        writer = csv.writer(shift_file, fieldnames=fieldnames)
         for key, value in pre_shifts.items():
-            writer.writerow([key, value])
+            writer.writerow({'file':key, 'phase_shift':value})
         shift_file.close()
-    
+
+    if 'postshift' in input_txt['steps']:                
+        shift_file = open(input_txt['save_path']+"PhaseCorr2_shifts.csv", "w")
+        fieldnames = ['file', 'phase2_shift']
+        writer = csv.writer(shift_file, fieldnames=fieldnames)
+        for key, value in post_shifts.items():
+            writer.writerow({'file':key, 'phase2_shift':value})
+        shift_file.close()    
     
 if __name__ == '__main__':
     main()
