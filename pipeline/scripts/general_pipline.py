@@ -459,7 +459,7 @@ def main():
         print('registration sequence:', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
         if 'preshift' in input_txt['steps']:
-            pre_ref = ref.copy()
+            start_ref = ref.copy()
             pre_shifts = {}
         if 'postshift' in input_txt['steps']:
             post_shifts = {}
@@ -482,6 +482,7 @@ def main():
         if 'ants' in input_txt['steps']:
             if 'preshift' in input_txt['steps']:
                 if ind == start:
+                    pre_ref = start_ref.copy()
                     pre_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
                     current_shift = pre_shifts[file]
                 else:
@@ -609,20 +610,22 @@ def main():
 
             if 'postshift' in input_txt['steps']:
                 if round == 0:
-                    post_ref = pre_ref.copy()
                     for ch, img in image.items():
                         save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file
                         save_image(save_name, img, 
                                 xy_pixel=input_txt['xy_pixel'], 
                                 z_pixel=input_txt['z_pixel'])
                     print(file, 'was saved without post_shift')
-                    post_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
+                    post_ref = start_ref.copy()
+                    post_shifts[file] = [0 for i in post_ref[input_txt['ch_names'][0]].shape]
                     current_shift_2 = post_shifts[file]
                     print('current post_shift has been resetted', current_shift_2)
                 elif ind == start:
                     print('second round on ref image is ignored')
-                    post_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
+                    post_ref = start_ref.copy()
+                    post_shifts[file] = [0 for i in post_ref[input_txt['ch_names'][0]].shape]
                     current_shift_2 = post_shifts[file]
+                    print('current post_shift has been resetted', current_shift_2)
                 elif similarity_check[ants_step]<0.94:
                     post_shifts[file] = phase_corr(post_ref[input_txt['ch_names'][0]], 
                                                 image[input_txt['ch_names'][0]], input_txt['sigma'])
