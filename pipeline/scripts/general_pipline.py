@@ -78,23 +78,30 @@ def txt2dict(path):
             except:
                 input_txt[key] = str2bool(val)    
     ### adding some default parameters if missing in info_txt
+    if 'sigma' not in input_txt.keys():
+        input_txt['sigma'] = 0
+    if 'steps' not in input_txt.keys():
+        input_txt['steps'] = ['all']    
+    if 'reg_subset' not in input_txt.keys():
+        input_txt['reg_subset'] = [0,0]
+    if 'metric' not in input_txt.keys():
+        input_txt['metric'] = 'mattes'
+    if 'check_ch' not in input_txt.keys():
+        input_txt['check_ch'] = input_txt['ch_names'][0]
+    #### reasign un-recognized parameters
     if type(input_txt['ch_names']) != list:
         input_txt['ch_names'] = [input_txt['ch_names']]
     if type(input_txt['drift_corr']) != list:
         input_txt['drift_corr'] = [input_txt['drift_corr']]
-    if 'sigma' not in input_txt.keys():
-        input_txt['sigma'] = 0
-    if 'steps' not in input_txt.keys():
-        input_txt['steps'] = ['all']
     if type(input_txt['steps']) == str:
         input_txt['steps'] = [input_txt['steps'].lower()]
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
         input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe']
-    if 'metric' not in input_txt:
-        input_txt['metric'] = 'mattes'
-
+    if 'check_ch' not in input_txt['ch_names']:
+        print('channel defined for similarity_check not recognized, so ch_0 used')
+        input_txt['check_ch'] = input_txt['ch_names'][0]
     print(input_txt)
     return input_txt
 
@@ -151,7 +158,7 @@ def rot_flip(img, flip, angle=0):
         flipped = ndimage.rotate(flipped, angle, reshape=False)
         print('rotated image by', angle)
     else:
-        for ind, sli in flipped:
+        for ind, sli in enumerate(flipped):
             flipped[ind] = ndimage.rotate(sli, angle, reshape=False)
         print('rotated image by', angle)
     return flipped
@@ -238,7 +245,22 @@ def antspy_regi(fixed, moving, drift_corr, metric='mattes',
     print(shift['fwdtransforms'])
     return shift
 
+def check_similarity(ref, image):
+    check = sum(metrics.pairwise.cosine_similarity(image.ravel().reshape(1,-1), 
+                           ref.ravel().reshape(1,-1)))[0]
+    print('cosine of image to ref is', check)
+    return check
+
 def antspy_drift(fixed, moving, shift):
+    try:
+        fixed= fixed.numpy()
+    except:
+        pass
+    try:
+        moving= moving.numpy()
+    except:
+        pass    
+    pre_check = check_similarity(fixed, moving)
     try:
         fixed= ants.from_numpy(np.float32(fixed))
     except:
@@ -249,7 +271,11 @@ def antspy_drift(fixed, moving, shift):
         pass
     """shifts image based on ref and provided shift"""
     vol_shifted = ants.apply_transforms(fixed, moving, transformlist=shift).numpy()
-    # vol_shifted = img_limits(vol_shifted)
+    post_check = check_similarity(fixed, vol_shifted)
+    print('similarity_check', pre_check, 'improved to', post_check)
+    if (pre_check - post_check) < 0.1:
+        vol_shifted = moving.copy()
+        print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
     return vol_shifted
 
 def apply_ants_channels(ref, image, drift_corr,  xy_pixel, 
@@ -281,7 +307,7 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
     for ch, img in image.items():
-        image[ch] = antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
+        image[ch]= antspy_drift(ref[ch],img,shift=shift['fwdtransforms'])
         if save == True:
             img_save = img_limits(image[ch])
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
@@ -310,12 +336,6 @@ def phase_corr(fixed, moving, sigma):
             shift, error, diffphase = np.zeros(len(moving)), 0, 0
             print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
-
-def cosine_check(ref, image):
-    check = sum(metrics.pairwise.cosine_similarity(image.ravel().reshape(1,-1), 
-                           ref.ravel().reshape(1,-1)))[0]
-    print('cosine of image to ref is', check)
-    return check
 
 def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
@@ -395,11 +415,6 @@ def main():
                 parameters[para] = input_txt[para]
             except:
                 pass
-        print(parameters)
-
-        if 'reg_subset' not in input_txt.keys():
-            input_txt['reg_subset'] = [0,0]
-
         ants_ref_no = str(input_txt['ants_ref_no'])
         try:
             for i in [0]:
@@ -422,32 +437,30 @@ def main():
             scope = np.arange(0,len(files_list),1)
         print('registration sequence:', scope) 
         ref = split_convert(ref, input_txt['ch_names'])
+        if 'preshift' in input_txt['steps']:
+            pre_ref = ref.copy()
+            pre_shifts = {}
+        if 'postshift' in input_txt['steps']:
+            post_shifts = {}
         ants_shift = {str(i+1)+'_'+drift_t:{} for i, drift_t in enumerate(input_txt['drift_corr'])}
-        cos_check = {str(i+1)+'_'+drift_t:{} for i, drift_t in enumerate(input_txt['drift_corr'])}
-        cos_check['0_unregi'] = {} 
-        basic_check = 0
-        temp_check = 0
+        similarity_check = {str(i+1)+'_'+drift_t:{} for i, drift_t in enumerate(input_txt['drift_corr'])}
+        similarity_check['0_unregi'] = {}
         if sum(input_txt['reg_subset']) != 0:
             print('image subset indecies', input_txt['reg_subset'])
             for ch, img in ref.items():
                 ref[ch] = img_subset(img, input_txt['reg_subset'])
-        if 'preshift' in input_txt['steps']:
-            pre_shifts = {}
-        if 'postshift' in input_txt['steps']:
-            post_shifts = {}
     else:
         scope = np.arange(0,len(files_list),1)
 
     for ind in scope:
-        file = files_list[ind]
-        save_file = os.path.basename(file)
-        print(ind,'working on ',save_file)
-        image = io.imread(file)
+        file_path = files_list[ind]
+        file = os.path.basename(file)
+        print(ind,'working on ',file)
+        image = io.imread(file_path)
         image = split_convert(image, input_txt['ch_names'])
         if 'ants' in input_txt['steps']:
             if 'preshift' in input_txt['steps']:
                 if ind == start:
-                    pre_ref = ref.copy()
                     pre_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][-1]].shape]
                     current_shift = pre_shifts[file]
                 else:
@@ -463,7 +476,7 @@ def main():
                                             np.empty_like(image[input_txt['ch_names'][0]])))
                     final[0::2]= image[input_txt['ch_names'][0]]
                     final[1::2]= image[input_txt['ch_names'][-1]]
-                    name = input_txt['save_path']+'PhaseCorr_'+save_file
+                    name = input_txt['save_path']+'PhaseCorr_'+file
                     save_image(name, final, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
             
             if sum(input_txt['reg_subset']) != 0:
@@ -474,84 +487,85 @@ def main():
                 ants_step = str(i+1)+'_'+drift_t
                 if ind == start:
                     for ch, img in image.items():
-                        save_name = input_txt['save_path']+drift_t+'_'+ch+'_'+save_file
+                        save_name = input_txt['save_path']+drift_t+'_'+ch+'_'+file
                         save_image(save_name, img, 
                                    xy_pixel=input_txt['xy_pixel'], 
                                    z_pixel=input_txt['z_pixel'])
-                    cos_ref = image[input_txt['ch_names'][0]]
-                    print(save_file, 'was saved without applying ants on itself')
+                    similarity_ref = image[input_txt['check_ch']]
+                    similarity_check[ants_step] = check_similarity(similarity_ref,similarity_ref)
+                    similarity_check['0_unregi'] = check_similarity(similarity_ref,similarity_ref)
+                    print(file, 'was saved without applying ants on itself')
                 else:
-                    print('applying antspy with method',drift_t,'on file',save_file)
+                    if i == 0:
+                        similarity_check['0_unregi'] = check_similarity(similarity_ref,image[input_txt['check_ch']])
+                    print('applying antspy with method',drift_t,'on file',file)
                     try:
                         metric_t = input_txt['metric'][i]
                     except:
-                        metric_t = 'mattes'
-                    if temp_check < 0.95:
-                        temp_image, ants_shift[ants_step][file] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
-                                                                        ch_names=input_txt['ch_names'],
-                                                                        metric=metric_t, ref_ch=-1,
-                                                                        reg_iterations=parameters['reg_iterations'], 
-                                                                        aff_iterations=parameters['aff_iterations'], 
-                                                                        aff_shrink_factors=parameters['aff_shrink_factors'], 
-                                                                        aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
-                                                                        grad_step=parameters['grad_step'], 
-                                                                        flow_sigma=parameters['flow_sigma'], 
-                                                                        total_sigma=parameters['total_sigma'],
-                                                                        aff_sampling=parameters['aff_sampling'], 
-                                                                        syn_sampling=parameters['syn_sampling'], 
-                                                                        xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-                                                                        save=True, save_path=input_txt['save_path'],
-                                                                        save_file=str(i+1)+save_file)
-                        temp_check = cosine_check(cos_ref, temp_image[input_txt['ch_names'][0]])
-                        cos_check[ants_step][file] = temp_check
-                        try:
-                            for i in [0]:
-                                if temp_check > cos_check[i-1][ind]:
-                                    print('new regi had better cosine similarity', temp_check, 'from previous', cos_check[i-1][ind])
-                                    image = temp_image.copy()
-                                else:
-                                    print('new regi had worse cosine similarity', temp_check, 'from previous', cos_check[i-1][ind])
-                                    print('this regi step was skipped')
-                        except:
-                            for i in [0]:
-                                image = temp_image.copy()
-                                print('cosine check was not applied')
-                        cos_ref = image[input_txt['ch_names'][0]].copy()
-                
-                # ########### chnaging ref to shifted image every X runs/files based on reset_ref
+                        for i in [0]:
+                            print('optimization metric not recognized. mattes used instead')
+                            metric_t = 'mattes'
+                    unshifted_check = check_similarity(similarity_ref,image[input_txt['check_ch']])
+                    shifted_img, ants_shift[ants_step][file] = apply_ants_channels(ref=ref, image=image, drift_corr=drift_t, 
+                                                                                ch_names=input_txt['ch_names'],
+                                                                                metric=metric_t, ref_ch=-1,
+                                                                                reg_iterations=parameters['reg_iterations'], 
+                                                                                aff_iterations=parameters['aff_iterations'], 
+                                                                                aff_shrink_factors=parameters['aff_shrink_factors'], 
+                                                                                aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
+                                                                                grad_step=parameters['grad_step'], 
+                                                                                flow_sigma=parameters['flow_sigma'], 
+                                                                                total_sigma=parameters['total_sigma'],
+                                                                                aff_sampling=parameters['aff_sampling'], 
+                                                                                syn_sampling=parameters['syn_sampling'], 
+                                                                                xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                                save=True, save_path=input_txt['save_path'],
+                                                                                save_file=str(i+1)+file)
+                    similarity_check[ants_step] = check_similarity(similarity_ref,shifted_img[input_txt['check_ch']])
+                    diff_1 = similarity_check['0_unregi'] - similarity_check[ants_step]
+                    diff_2 = unshifted_check - similarity_check[ants_step] 
+                    if diff_1 < 0.05 and diff_2 < 0.05:
+                        print('similarity check improved from', unshifted_check, 'to', similarity_check[ants_step])
+                        image = shifted_img.copy()
+                    else:
+                        print('similarity chack was worse after', drift_t, unshifted_check, '>>',similarity_check[ants_step])
+                        print('this antpy transformation was ignored')  
+            similarity_ref = image[input_txt['check_ch']]              
+            ############ chnaging ref to shifted image every X runs/files based on reset_ref
             if ind % input_txt['ref_reset'] == 0:
+                print(ind, input_txt['ref_reset'], ind % input_txt['ref_reset'])
                 print('changing the ref image')
                 ref = image.copy()
-            temp_check = 0
-            if 'postshift' in input_txt['steps'] and temp_check<0.92:
+
+            if 'postshift' in input_txt['steps'] and similarity_check[ants_step]<0.94:
                 if ind == start:
                     for ch, img in image.items():
-                        save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+save_file
+                        save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file
                         save_image(save_name, img, 
                                 xy_pixel=input_txt['xy_pixel'], 
                                 z_pixel=input_txt['z_pixel'])
-                    print(save_file, 'was saved without applying ants on itself')
+                    print(file, 'was saved without applying ants on itself')
                     post_ref = pre_ref.copy()
-                    post_shifts[ind] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
-                    current_shift_2 = post_shifts[ind]
+                    post_shifts[file] = [0 for i in pre_ref[input_txt['ch_names'][0]].shape]
+                    current_shift_2 = post_shifts[file]
                     print('current post_shift has been resetted', current_shift_2)
                 else:
-                    post_shifts[ind] = phase_corr(post_ref[input_txt['ch_names'][0]], 
+                    post_shifts[file] = phase_corr(post_ref[input_txt['ch_names'][0]], 
                                                 image[input_txt['ch_names'][0]], input_txt['sigma'])
-                    current_shift_2 = [sum(x) for x in zip(current_shift_2, post_shifts[ind])]
-                    print(post_shifts[ind], current_shift_2)
+                    current_shift_2 = [sum(x) for x in zip(current_shift_2, post_shifts[file])]
+                    print(post_shifts[file], current_shift_2)
                     post_ref = image.copy()
                     for ch in image.keys():
                         image[ch] = ndimage.shift(image[ch], current_shift_2)
                         image[ch] -= image[ch].min()
                         image[ch] = image[ch].astype(np.uint16)
-                        save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+save_file  
+                        save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file  
                         save_image(save_name, image[ch], 
                                    xy_pixel=input_txt['xy_pixel'], 
                                    z_pixel=input_txt['z_pixel'])  
                 print('current post_shift', current_shift_2)                    
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
-            name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+save_file
+            name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+file
             save_image(name, image[input_txt['ch_names'][-1]], 
                        xy_pixel=input_txt['xy_pixel'], 
                        z_pixel=input_txt['z_pixel'])
@@ -562,24 +576,20 @@ def main():
 
         img = image[input_txt['ch_names'][0]]
         if 'n2v' in input_txt['steps']:
-            print('applying n2v on', save_file)
+            print('applying n2v on', file)
             img = N2V_predict(image=img,
                               model_name=input_txt['model_name'], 
                               model_path=input_txt['model_path'], 
                               save=True, save_path=input_txt['save_path'],
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-                              save_file=input_txt['ch_names'][0]+'_'+save_file)
+                              save_file=input_txt['ch_names'][0]+'_'+file)
         if 'clahe' in input_txt['steps']:
-            print('applying clahe on', save_file)
+            print('applying clahe on', file)
             img = apply_clahe(kernel_size=input_txt['kernel_size'], 
                               image=img, clipLimit=input_txt['clipLimit'], 
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save=True, save_path=input_txt['save_path'], 
-                              save_file=input_txt['ch_names'][0]+'_'+save_file)
-        
-        print('finished applying pipline for ', save_file)
-        print('memory usage before gc.collect')
-        mem_use()
+                              save_file=input_txt['ch_names'][0]+'_'+file)
         del image, img
         gc.collect()
         print('memory usage after gc.collect')
@@ -597,31 +607,35 @@ def main():
                     writer.writerow({'reg_step': reg_step, 'file' : file, 'ants_shift' : ants_shift})
         csvfile.close()
 
-        checks_file = input_txt['save_path']+"cosine_checks.csv"
+        checks_file = input_txt['save_path']+"similarity_check.csv"
         with open(checks_file, 'w', newline='') as csvfile:
-            fieldnames = ['reg_step', 'file', 'cos_check']
+            fieldnames = ['reg_step', 'file', 'similarity_check']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for reg_step, checks in cos_check.items():
-                for file, cos_check in checks.items():
-                    writer.writerow({'reg_step': reg_step, 'file' : file, 'cos_check' : cos_check})
+            for reg_step, checks in similarity_check.items():
+                for file, similarity_check in checks.items():
+                    writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
         csvfile.close()
 
-    if 'preshift' in input_txt['steps']:                
-        shift_file = open(input_txt['save_path']+"PhaseCorr_shifts.csv", "w")
-        fieldnames = ['file', 'phase_shift']
-        writer = csv.writer(shift_file, fieldnames=fieldnames)
-        for key, value in pre_shifts.items():
-            writer.writerow({'file':key, 'phase_shift':value})
-        shift_file.close()
+    if 'preshift' in input_txt['steps']:  
+        shift_file = input_txt['save_path']+"PhaseCorr_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['file', 'phase_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for file, shift in pre_shifts.items():
+                writer.writerow({'file' : file, 'phase_shift' : shift})
+        csvfile.close()
 
-    if 'postshift' in input_txt['steps']:                
-        shift_file = open(input_txt['save_path']+"PhaseCorr2_shifts.csv", "w")
-        fieldnames = ['file', 'phase2_shift']
-        writer = csv.writer(shift_file, fieldnames=fieldnames)
-        for key, value in post_shifts.items():
-            writer.writerow({'file':key, 'phase2_shift':value})
-        shift_file.close()    
+    if 'postshift' in input_txt['steps']:  
+        shift_file = input_txt['save_path']+"PhaseCorr2_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['file', 'phase2_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for file, shift in post_shifts.items():
+                writer.writerow({'file' : file, 'phase2_shift' : shift})
+        csvfile.close() 
     
 if __name__ == '__main__':
     main()

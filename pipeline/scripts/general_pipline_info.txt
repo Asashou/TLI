@@ -48,3 +48,6 @@ reg_iterations: 320,160,60
 aff_iterations: 5000,2400,2400,120
 aff_shrink_factors: 6,4,2,1
 aff_smoothing_sigmas: 3,2,1,0
+
+### similarity_check parameters:
+check_ch: GFP #define which channel to apply the check on
