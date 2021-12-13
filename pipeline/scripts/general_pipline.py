@@ -17,8 +17,7 @@ import skimage.transform as tr
 import psutil
 import gc
 from PIL import Image
-from scipy import spatial
-from scipy import stats
+from scipy import ndimage, spatial, stats
 import matplotlib.pyplot as plt
 from sklearn import metrics
 # functions
@@ -132,6 +131,27 @@ def img_subset(img, subset):
     except:
         print('failed to subset image')
     return subset_img
+
+def rot_flip(img, flip, angle=0):
+    vert = ['vertical', 'vertically', 2, -1]
+    hort = ['horizontally', 'horizontal', 1]
+    if flip in vert:
+        flipped = img[:,:,::-1]
+        print('flipped image vertically')
+    elif flip in hort:
+        flipped = img[:,::-1,:]
+        print('flipped image horizontally')
+    else:
+        flipped = img.copy()
+    
+    if len(flipped.shape) == 2:
+        flipped = ndimage.rotate(flipped, angle, reshape=False)
+        print('rotated image by', angle)
+    else:
+        for ind, sli in flipped:
+            flipped[ind] = ndimage.rotate(sli, angle, reshape=False)
+        print('rotated image by', angle)
+    return flipped
 
 def split_convert(image, ch_names):
     """deinterleave the image into dictionary of two channels"""
@@ -493,10 +513,13 @@ def main():
             save_image(name, image[input_txt['ch_names'][-1]], 
                        xy_pixel=input_txt['xy_pixel'], 
                        z_pixel=input_txt['z_pixel'])
+        
+        ## rotating and flipping the image
+        for ch, img in image.items():
+            image[ch] = rot_flip(img, input_txt['flip'], input_txt['angle'])
+
         img = image[input_txt['ch_names'][0]]
         if 'n2v' in input_txt['steps']:
-            # if ind == start and i>0:
-            #     continue
             print('applying n2v on', save_file)
             img = N2V_predict(image=img,
                               model_name=input_txt['model_name'], 
@@ -505,14 +528,13 @@ def main():
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
         if 'clahe' in input_txt['steps']:
-            # if ind == start and i>0:
-            #     continue
             print('applying clahe on', save_file)
             img = apply_clahe(kernel_size=input_txt['kernel_size'], 
                               image=img, clipLimit=input_txt['clipLimit'], 
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save=True, save_path=input_txt['save_path'], 
                               save_file=input_txt['ch_names'][0]+'_'+save_file)
+        
         print('finished applying pipline for ', save_file)
         print('memory usage before gc.collect')
         mem_use()

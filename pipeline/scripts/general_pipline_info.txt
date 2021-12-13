@@ -4,20 +4,20 @@ purpose: preprocessing session 211016 with pipeline from 211212
 
 ### provided paths: data_path, saving_path and n2v model path
 path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211114/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211114/regi10/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211114/regi12/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
 ### data filtering parameters: name(group), channel names,subset
 group: 211114_brain3.2_LP40_P36_0
 ch_names: GFP, Red  ## if the images has one channel then also specify here (e.g:GFP)
-reg_subset: 22,65,350,700,350,800  ##Z,Y,X slicing. In case no subset required, type 0,0
+reg_subset: 20,60,450,750,425,750  ##Z,Y,X slicing. In case no subset required, type 0,0
 
 ### preprocessing steps to apply
 steps: all # all means prshift,ants,postshift,n2v,clahe
 
 ### rotation and image_flip (not implemented yet)
-rotat_O: 6
-Flip: false
+angle: 6
+flip: 1 ## you need to 
 
 ### files metadata
 xy_pixel: 0.0764616
@@ -39,7 +39,7 @@ ref_reset: 50
 save_pre_shift: false
 sigma: 5
 drift_corr: Rigid, Affine, SyNRA
-metric: meansquares, meansquares, CC
+metric: meansquares, mattes, CC
 grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
