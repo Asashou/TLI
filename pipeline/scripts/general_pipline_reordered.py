@@ -570,9 +570,14 @@ def main():
                 if ind == start:
                     for ch, img in image.items():
                         save_name = input_txt['save_path']+drift_t+'_'+ch+'_'+file
-                        save_image(save_name, img, 
-                                   xy_pixel=input_txt['xy_pixel'], 
-                                   z_pixel=input_txt['z_pixel'])
+                        try:
+                            for i in [0]:
+                                img = img.numpy()
+                                save_image(save_name, img, 
+                                        xy_pixel=input_txt['xy_pixel'], 
+                                        z_pixel=input_txt['z_pixel'])   
+                        except:
+                            pass          
                     similarity_ref = image[input_txt['check_ch']]
                     similarity_check[ants_step] = check_similarity(similarity_ref,similarity_ref)
                     similarity_check['0_unregi'][file] = check_similarity(similarity_ref,similarity_ref)
@@ -659,9 +664,14 @@ def main():
                         print('saving image after 2nd round of Antspy')
                         for ch, img in image.items():
                             save_name = input_txt['save_path']+'finalAnts_'+ch+'_'+file
-                            save_image(save_name, img, 
-                                    xy_pixel=input_txt['xy_pixel'], 
-                                    z_pixel=input_txt['z_pixel'])                            
+                            try:
+                                for i in [0]:
+                                    img = img.numpy()
+                                    save_image(save_name, img, 
+                                            xy_pixel=input_txt['xy_pixel'], 
+                                            z_pixel=input_txt['z_pixel'])   
+                            except:
+                                pass                         
             ############ chnaging ref to shifted image every X runs/files based on reset_ref
             if ind % input_txt['ref_reset'] == 0:
                 print(ind, input_txt['ref_reset'], ind % input_txt['ref_reset'])
@@ -672,9 +682,14 @@ def main():
                 if round == 0:
                     for ch, img in image.items():
                         save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file
-                        save_image(save_name, img, 
-                                xy_pixel=input_txt['xy_pixel'], 
-                                z_pixel=input_txt['z_pixel'])
+                        try:
+                            for i in [0]:
+                                img = img.numpy()
+                                save_image(save_name, img, 
+                                        xy_pixel=input_txt['xy_pixel'], 
+                                        z_pixel=input_txt['z_pixel'])   
+                        except:
+                            pass          
                     print(file, 'was saved without post_shift')
                     post_ref = start_ref.copy()
                     post_shifts[file] = [0 for i in post_ref[input_txt['ch_names'][0]].shape]

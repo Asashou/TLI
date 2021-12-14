@@ -100,7 +100,7 @@ def txt2dict(path):
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe']
+        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe', 'mask']
     if 'check_ch' not in input_txt['ch_names']:
         print('channel defined for similarity_check not recognized, so ch_0 used')
         input_txt['check_ch'] = input_txt['ch_names'][0]
@@ -217,6 +217,29 @@ def mask_image(volume, return_mask = False ,sig = 2):
         return image
     else:
         return mask
+
+def mask_subset(image, xy_pixel, z_pixel, sig=2, file='', save=True, save_path='', save_file=''):
+    if file != '':
+        image = Image.open(file)
+        image = np.array(image)
+    file_name = os.path.basename(file)
+    mask = image.copy()
+    for i, img in enumerate(image):
+        try:
+            mask[i] = mask_image(img, return_mask=False ,sig=sig)
+        except:
+            mask[i] = mask[i]
+    img_limits(mask, limit=2000, ddtype=np.uint16)
+    if save == True:
+        if save_file == '':
+            save_name = save_path+'mask_'+file_name
+        else:
+            save_name = save_path+'mask_'+save_file
+        if '.tif' not in save_name:
+            save_name += '.tif'
+        img_save = img_limits(mask, limit=2000)
+        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return mask
 
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 reg_iterations=(40,20,0), 
@@ -479,6 +502,11 @@ def main():
         print(ind,'working on ',file)
         image = io.imread(file_path)
         image = split_convert(image, input_txt['ch_names'])
+
+        ## rotating and flipping the image
+        for ch, img in image.items():
+            image[ch] = rot_flip(img, input_txt['flip'], input_txt['angle'])
+
         if 'ants' in input_txt['steps']:
             if 'preshift' in input_txt['steps']:
                 if ind == start:
@@ -542,7 +570,7 @@ def main():
                                                                                 syn_sampling=parameters['syn_sampling'], 
                                                                                 xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                                                 check_ch=input_txt['check_ch'],
-                                                                                save=True, save_path=input_txt['save_path'],
+                                                                                save=False, save_path=input_txt['save_path'],
                                                                                 save_file=str(i+1)+file)
                     similarity_check[ants_step] = check_similarity(similarity_ref,shifted_img[input_txt['check_ch']])
                     diff_1 = similarity_check['0_unregi'][file] - similarity_check[ants_step]
@@ -595,13 +623,13 @@ def main():
                                     print('this antpy transformation was ignored')  
                                 similarity_ref2 = image[input_txt['check_ch']] 
                                 similarity_check['final'][file] =  shifted_check
-                    if reg_rd > 0:
-                        print('saving image after 2nd round of Antspy')
-                        for ch, img in image.items():
-                            save_name = input_txt['save_path']+'finalAnts_'+ch+'_'+file
-                            save_image(save_name, img, 
-                                    xy_pixel=input_txt['xy_pixel'], 
-                                    z_pixel=input_txt['z_pixel'])                            
+                    # if reg_rd > 0:
+                    #     print('saving image after 2nd round of Antspy')
+                    #     for ch, img in image.items():
+                    #         save_name = input_txt['save_path']+'finalAnts_'+ch+'_'+file
+                    #         save_image(save_name, img, 
+                    #                 xy_pixel=input_txt['xy_pixel'], 
+                    #                 z_pixel=input_txt['z_pixel'])                            
             ############ chnaging ref to shifted image every X runs/files based on reset_ref
             if ind % input_txt['ref_reset'] == 0:
                 print(ind, input_txt['ref_reset'], ind % input_txt['ref_reset'])
@@ -633,25 +661,23 @@ def main():
                     print(post_shifts[file], current_shift_2)
                     post_ref = image.copy()
                     for ch in image.keys():
-                        image[ch] = ndimage.shift(image[ch], current_shift_2)
-                        image[ch] -= image[ch].min()
-                        image[ch] = image[ch].astype(np.uint16)
-                        save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file  
-                        save_image(save_name, image[ch], 
-                                   xy_pixel=input_txt['xy_pixel'], 
-                                   z_pixel=input_txt['z_pixel'])  
+                        image[ch] = ndimage.shift(image[ch], current_shift_2) 
                     print('current post_shift', current_shift_2)
                 else:
-                    print('post_shift was not applied because similarity metric is high enough', similarity_check[ants_step])                    
+                    print('post_shift was not applied because similarity metric is high enough', similarity_check[ants_step])  
+                for ch, img in image.items():
+                    image[ch] -= image[ch].min()
+                    image[ch] = image[ch].astype(np.uint16)
+                    save_name = input_txt['save_path']+'PhaseCorr2_'+ch+'_'+file  
+                    save_image(save_name, image[ch], 
+                                xy_pixel=input_txt['xy_pixel'], 
+                                z_pixel=input_txt['z_pixel']) 
+
         if 'ants' not in input_txt['steps'] and len(input_txt['ch_names'])>1:
             name = input_txt['save_path']+input_txt['ch_names'][-1]+'_'+file
             save_image(name, image[input_txt['ch_names'][-1]], 
                        xy_pixel=input_txt['xy_pixel'], 
                        z_pixel=input_txt['z_pixel'])
-        
-        ## rotating and flipping the image
-        for ch, img in image.items():
-            image[ch] = rot_flip(img, input_txt['flip'], input_txt['angle'])
 
         img = image[input_txt['ch_names'][0]]
         if 'n2v' in input_txt['steps']:
@@ -669,6 +695,13 @@ def main():
                               xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                               save=True, save_path=input_txt['save_path'], 
                               save_file=input_txt['ch_names'][0]+'_'+file)
+
+        if 'mask' in input_txt['steps']:
+            img = mask_subset(img, sig=10,
+                                save=True, save_path=input_txt['save_path'],
+                                xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                save_file=input_txt['ch_names'][0]+'_'+file)        
+
         del image, img
         gc.collect()
         print('memory usage after gc.collect')
