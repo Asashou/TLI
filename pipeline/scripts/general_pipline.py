@@ -558,7 +558,7 @@ def main():
             if len(input_txt['ch_names']) > 1:
                 if input_txt['double_register'] == True:
                     similarity_check['final'] = {}
-                    round = 0
+                    reg_rd = 0
                     for i, drift_t in enumerate(input_txt['drift_corr']):
                         if drift_t in ['Rigid','Similarity','Affine']:
                             if ind == start:
@@ -589,13 +589,13 @@ def main():
                                 if diff_3 < 0.05:
                                     print('similarity check in 2nd ants_round improved from', unshifted_check, 'to', shifted_check)
                                     image = shifted_img.copy()
-                                    round += 1
+                                    reg_rd += 1
                                 else:
                                     print('similarity chack in 2nd ants_round was worse after', drift_t, unshifted_check, '>>',shifted_check)
                                     print('this antpy transformation was ignored')  
                                 similarity_ref2 = image[input_txt['check_ch']] 
                                 similarity_check['final'][file] =  shifted_check
-                    if round > 0:
+                    if reg_rd > 0:
                         print('saving image after 2nd round of Antspy')
                         for ch, img in image.items():
                             save_name = input_txt['save_path']+'finalAnts_'+ch+'_'+file
