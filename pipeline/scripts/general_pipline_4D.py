@@ -23,7 +23,7 @@ from sklearn import metrics
 from skimage.filters import gaussian, threshold_otsu
 from scipy import ndimage
 from tqdm import tqdm
-import h5py
+# import h5py
 
 # functions
 def mem_use():
@@ -101,7 +101,7 @@ def txt2dict(path):
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['preshift', 'postshift', 'ants', 'n2v', 'clahe', 'mask']
+        input_txt['steps'] = ['compile','preshift', 'postshift', 'ants', 'n2v', 'clahe', 'mask']
     if 'check_ch' not in input_txt['ch_names']:
         print('channel defined for similarity_check not recognized, so ch_0 used')
         input_txt['check_ch'] = input_txt['ch_names'][0]
@@ -128,14 +128,54 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
     return file_list
 
 def img_limits(img, limit=2000, ddtype=np.uint16):
+    max_limits = {np.uint8: 256, np.uint16: 65536}
     print('image old limits', img.min(), img.max())
     img = img - img.min()
-    if limit != 0:
-        img = img/img.max()
-        img = img*limit
+    if limit == 0:
+        limit = img.max()
+    if limit > max_limits[ddtype]:
+        print('the limit provided is larger than alocated dtype. limit reassigned as appropriate')
+        limit = max_limits[ddtype]
+    img = img/img.max()
+    img = img*limit
     img = img.astype(ddtype)
     print('image new limits and type', img.min(), img.max(), img.dtype)
     return img
+
+def files_to_4D(files_list, ch_names=[''], 
+                save=True, save_path='', save_file='', 
+                xy_pixel=1, z_pixel=1, ddtype=np.uint8):
+    """
+    read files_list, load the individual 3D_img tifffiles, 
+    and convert them into a dict of 4D-arrays of the identified ch
+    has the option of saving is as 8uint image
+    """
+    image_4D = {ch:[] for ch in ch_names}
+    files_list.sort()
+    for file in files_list:
+        image = io.imread(file)
+        image = split_convert(image, ch_names=ch_names)
+        for ch in ch_names:
+            image_4D[ch].append(image[ch])
+    for ch in ch_names:
+        image_4D[ch] = np.array(image_4D[ch])
+        if save == True:
+            if save_path[-1] != '/':
+                save_path += '/'
+            if save_file == '':
+                name1 = os.path.basename(files_list[0])
+                name2 = os.path.basename(files_list[1])
+                for s in name1:
+                    if s in name2:
+                        save_file += s
+                    else:
+                        break
+            save_name = save_path+'4D_'+ch+'_'+save_file
+            if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
+                save_name += '.tif'
+            img_save = img_limits(image_4D[ch], limit=0, ddtype=ddtype)
+            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        return image_4D
 
 def img_subset(img, subset):
     print('subsetting the image')
@@ -177,10 +217,10 @@ def split_convert(image, ch_names):
         image_ch[ch] = img_limits(img, limit=0)
     return image_ch
 
-def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
+def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4, dim='ZYX'):
     """save provided image by name with provided xy_pixel, and z_pixel resolution as metadata"""
     tif.imwrite(name, image, imagej=True, resolution=(1./xy_pixel, 1./xy_pixel),
-                metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': 'ZYX'})
+                metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
 
 def mask_image(volume, return_mask = False ,sig = 2):
     """
@@ -382,7 +422,7 @@ def phase_corr(fixed, moving, sigma):
             print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
 
-def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', save=True, save_path='', save_file=''):
+def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
     if save is True, save predicted image with provided info"""
     if file != '':
@@ -402,7 +442,7 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
         save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
 
-def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
+def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
     """apply Clahe on image based on provided kernel_size and clipLimit
     if save is True, save predicted image with provided info"""
     if file != '':
@@ -430,8 +470,8 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
         img_save = img_limits(image_clahe, limit=0)
         save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_clahe
-######################
 
+######################
 
 def main():
     parser = argparse.ArgumentParser(description='read info.txt file and perform preprocessing pipline on prvided path',
@@ -443,30 +483,26 @@ def main():
     input_txt = txt2dict(args.txt_path)
 
     #######
-    files_list = get_file_names(input_txt['path_to_data'], 
-                                group_by=input_txt['group'], 
-                                order=input_txt['reference_last'])
-    print('the first 5 files (including ref) are', files_list[0:5])
-
-    # naming the hdf5 file based on group_name and saving it in save_path
-    h5f_name = input_txt['save_path']+input_txt['group'].split('_')[0]+'_raw'+'.h5'
-    h5f = h5py.File(h5f_name, 'w')
-
-    image_4D = {ch:[] for ch in input_txt['ch_names']}
-    for ind, file in enumerate(files_list):
-        file_name = os.path.basename(file)
-        image = io.imread(file)
-        image = split_convert(image, input_txt['ch_names'])
-        for ch in input_txt['ch_names']:
-            image_4D[ch].append(image[ch])
-            image_4D[ch] = np.array(image_4D[ch])
-            print(image_4D[ch].shape)
-            h5f = h5py.File(h5f_name, 'a')
-            dataset_name = ch+file_name
-            h5f.create_dataset(str(file), data=image_4D[ch])
-            h5f.close()
-
-
+    if os.path.isdir(input_txt['path_to_data']):
+        files_list = get_file_names(input_txt['path_to_data'], 
+                                    group_by=input_txt['group'], 
+                                    order=input_txt['reference_last'])
+        print('the first 5 files (including ref) are', files_list[0:5])
+        if 'compile' in input_txt['steps']:
+            # loading raw skimage files into 4D array and saving raw 4D
+            file_4D = 'raw_'+input_txt['group'].split('_')[0]
+            image_4D = files_to_4D(files_list, ch_names=input_txt['ch_names'], save=True, 
+                                save_path=input_txt['save_path'], 
+                                save_file=file_4D, 
+                                xy_pixel=input_txt['xy_pixel'], 
+                                z_pixel=input_txt['z_pixel'], 
+                                ddtype=np.uint8)
+        else:
+           temp = input_txt['ch_names'].copy()
+           temp.sort()
+           image_4D = {ch:io.imread(files_list[ind]) for ind, ch in enumerate(temp)} 
+    elif os.path.isfile(input_txt['path_to_data']):
+        image_4D = {nput_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
 
 
     
