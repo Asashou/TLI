@@ -405,8 +405,8 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
     return image, shift
 
 def apply_ants_4D(image, drift_corr,  xy_pixel, 
-                  z_pixel, ch_names, ref_t=0,
-                  metric='mattes',
+                  z_pixel, ch_names=[1], ref_t=0,
+                  ref_ch=-1, metric='mattes',
                   reg_iterations=(40,20,0), 
                   aff_iterations=(2100,1200,1200,10), 
                   aff_shrink_factors=(6,4,2,1), 
@@ -416,37 +416,32 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
                   check_ch='',                       
                   save=True, save_path='',save_file=''):
     """"""
-    for ind, tim in image:
-        try:
-            image[ind] = ants.from_numpy(np.float32(value))
-        except:
-            pass
+    if isinstance(image, dict):
+        image = {ch_names:image}
+    for ch in ch_names:
+            image[ch] = ants.from_numpy(np.float32(image[ch]))
     if ref_t== -1:
-        ref_t= len(image)-1
-    ref = image[ref_t].copy()
-    for i, tim in image[ref_t::]:
-        shift = antspy_regi(ref, tim, drift_corr, metric,
-                            reg_iterations=reg_iterations, 
-                            aff_iterations=aff_iterations, 
-                            aff_shrink_factors=aff_shrink_factors, 
-                            aff_smoothing_sigmas=aff_smoothing_sigmas,
-                            grad_step=grad_step, flow_sigma=flow_sigma, 
-                            total_sigma=total_sigma,
-                            aff_sampling=aff_sampling, 
-                            syn_sampling=syn_sampling)
-        ind = i + ref_t
-        image[ind] = antspy_drift(ref[ch],tim,shift=shift['fwdtransforms'],check=True)
-    for i, tim in image[0:ref_t]:
-        shift = antspy_regi(ref, tim, drift_corr, metric,
-                            reg_iterations=reg_iterations, 
-                            aff_iterations=aff_iterations, 
-                            aff_shrink_factors=aff_shrink_factors, 
-                            aff_smoothing_sigmas=aff_smoothing_sigmas,
-                            grad_step=grad_step, flow_sigma=flow_sigma, 
-                            total_sigma=total_sigma,
-                            aff_sampling=aff_sampling, 
-                            syn_sampling=syn_sampling)
-        image[i] = antspy_drift(ref[ch],tim,shift=shift['fwdtransforms'],check=True)    
+        ref_t= len(image[ch_names[-1]])-1
+    fixed = {image[ch][ref_t].copy() for ch in ch_names}
+    scope = np.arange(0,ref_t)
+    scope = np.concatenate((scope, np.arange(ref_t,len(image[ch_names[-1]]))))
+    print('ants seq for 4D regi',scope)
+    shifts = {}
+    for i in scope:
+        moving = {image[ch][i].copy() for ch in ch_names}
+        shifted, shifts[i] = apply_ants_channels(fixed, moving, drift_corr=drift_corr,  xy_pixel=xy_pixel, 
+                        z_pixel=z_pixel, ch_names=ch_names, ref_ch=ref_ch,
+                        metric=metric,
+                        reg_iterations=reg_iterations, 
+                        aff_iterations=aff_iterations, 
+                        aff_shrink_factors=aff_shrink_factors, 
+                        aff_smoothing_sigmas=aff_smoothing_sigmas,
+                        grad_step=grad_step, flow_sigma=flow_sigma, total_sigma=total_sigma,
+                        aff_sampling=aff_sampling, syn_sampling=syn_sampling,  
+                        check_ch=check_ch,                       
+                        save=save, save_path=save_path,save_file=save_file)
+        for ch in ch_names:
+            image[ch][i] = shifted[ch] 
     if save == True:
         for ch, img in image.items():
             img_save = img_limits(image[ch])
@@ -454,7 +449,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             if '.tif' not in save_name:
                 save_name += '.tif'
             save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
-    return image, shift
+    return image, shifts
 
 def phase_corr(fixed, moving, sigma):
     if fixed.shape > moving.shape:
@@ -537,6 +532,7 @@ def main():
     ##### this part is for reading variables' values and info.txt
     input_txt = txt2dict(args.txt_path)
     #######
+    file_4D = input_txt['group'].split('_')[0]+'.tif'
     if os.path.isdir(input_txt['path_to_data']):
         files_list = get_file_names(input_txt['path_to_data'], 
                                     group_by=input_txt['group'], 
@@ -544,10 +540,9 @@ def main():
         print('the first 5 files (including ref) are', files_list[0:5])
         if 'compile' in input_txt['steps']:
             # loading raw skimage files into 4D array and saving raw 4D
-            file_4D = 'raw_'+input_txt['group'].split('_')[0]
             image_4D = files_to_4D(files_list, ch_names=input_txt['ch_names'], save=True, 
                                 save_path=input_txt['save_path'], 
-                                save_file=file_4D, 
+                                save_file='raw_'+file_4D, 
                                 xy_pixel=input_txt['xy_pixel'], 
                                 z_pixel=input_txt['z_pixel'], 
                                 ddtype=np.uint8)
@@ -556,23 +551,45 @@ def main():
            temp.sort()
            image_4D = {ch:io.imread(files_list[ind]) for ind, ch in enumerate(temp)} 
     elif os.path.isfile(input_txt['path_to_data']):
-        image_4D = {nput_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
+        image_4D = {input_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
         files_list = [i for i in np.arange(len(image_4D))]
+        file_4D = os.path.basename(input_txt['path_to_data'])
+        file_4D = file_4D.split('_')[0]+'.tif'
     
     if 'preshift' in input_txt['steps']:
         pre_shifts = {}
-        current_shift = [0 for i in image_4D[0].shape]
-        for ind, stack in enumerate(image_4D):
-            pre_shifts[files_list[ind]] = phase_corr(image_4D[0], stack, input_txt['sigma']) 
-            current_shift = [sum(x) for x in zip(current_shift, pre_shifts[files_list[ind]])]  
-            image_4D[ind] = ndimage.shift(image_4D[ind], current_shift)    
-            print('current pre_shift', current_shift) 
+        ref_im = image_4D[input_txt['ch_names'][-1]]
+        current_shift = [0 for i in ref_im[0].shape]
+        for ind, stack in enumerate(ref_im):
+            pre_shifts[files_list[ind]] = phase_corr(ref_im[0], stack, input_txt['sigma']) 
+            current_shift = [sum(x) for x in zip(current_shift, pre_shifts[files_list[ind]])] 
+            print('current pre_shift', current_shift)
+            for ch, img in image_4D.items(): 
+                image_4D[ch][ind] = ndimage.shift(img[ind], current_shift) 
         if input_txt['save_pre_shift'] == True:
-            name = input_txt['save_path']+'preshifted_4D_image.tif'
-            save_image(name, image_4D, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
+            for ch, img in image_4D.items():
+                name = input_txt['save_path']+'PhaseCorr_'+ch+'_'+file_4D
+                save_image(name, img, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
 
-
-
+    if 'subset' in input_txt['steps']:
+        for ch, img in image_4D.items():
+            image_4D[ch] = img[:,input_txt['reg_subset'][0]:input_txt['reg_subset'][1]]
+    
+    if 'n2v' in input_txt['steps']:
+        for ind, stack in image_4D[input_txt['ch_names'][-1]]:
+            image_4D[input_txt['ch_names'][-1]][ind] = N2V_predict(image=stack,
+                                                                    model_name=input_txt['model_name'], 
+                                                                    model_path=input_txt['model_path'], 
+                                                                    save=True, save_path=input_txt['save_path'],
+                                                                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                    save_file=input_txt['ch_names'][0]+'_'+file_4D)
+    if 'clahe' in input_txt['steps']:
+        for ind, stack in image_4D[input_txt['ch_names'][-1]]:
+            image_4D[input_txt['ch_names'][-1]][ind] = apply_clahe(kernel_size=input_txt['kernel_size'], 
+                                                                    image=img, clipLimit=input_txt['clipLimit'], 
+                                                                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
+                                                                    save=True, save_path=input_txt['save_path'], 
+                                                                    save_file=input_txt['ch_names'][0]+'_'+file_4D)
     
     # if 'ants' in input_txt['steps']:
     #     parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
