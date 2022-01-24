@@ -366,7 +366,10 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
         except:
             pass
     for ch, value in image.items():
-        image[ch]= ants.from_numpy(np.float32(value))
+        try:
+            image[ch]= ants.from_numpy(np.float32(value))
+        except:
+            pass
     shift = antspy_regi(ref[ch_names[ref_ch]], image[ch_names[ref_ch]], drift_corr, metric,
                         reg_iterations=reg_iterations, 
                         aff_iterations=aff_iterations, 
@@ -384,14 +387,66 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
         pre_check = check_similarity(check_ref, image[check_ch].numpy())
         post_check = check_similarity(check_ref, shifted[check_ch])
         print('similarity_check', pre_check, 'improved to', post_check)
-        image = shifted
+        image = shifted.copy()
         if (pre_check - post_check) > 0.1:
             for ch, img in shifted.items():
                 image[ch] = img.numpy() 
             print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
     else:
         print(check_ch, 'not a recognized ch in image')
-        image = shifted
+        image = shifted.copy()
+    if save == True:
+        for ch, img in image.items():
+            img_save = img_limits(image[ch])
+            save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name += '.tif'
+            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
+    return image, shift
+
+def apply_ants_4D(image, drift_corr,  xy_pixel, 
+                  z_pixel, ch_names, ref_t=0,
+                  metric='mattes',
+                  reg_iterations=(40,20,0), 
+                  aff_iterations=(2100,1200,1200,10), 
+                  aff_shrink_factors=(6,4,2,1), 
+                  aff_smoothing_sigmas=(3,2,1,0),
+                  grad_step=0.2, flow_sigma=3, total_sigma=0,
+                  aff_sampling=32, syn_sampling=3,  
+                  check_ch='',                       
+                  save=True, save_path='',save_file=''):
+    """"""
+    for ind, tim in image:
+        try:
+            image[ind] = ants.from_numpy(np.float32(value))
+        except:
+            pass
+    if ref_t== -1:
+        ref_t= len(image)-1
+    ref = image[ref_t].copy()
+    for i, tim in image[ref_t::]:
+        shift = antspy_regi(ref, tim, drift_corr, metric,
+                            reg_iterations=reg_iterations, 
+                            aff_iterations=aff_iterations, 
+                            aff_shrink_factors=aff_shrink_factors, 
+                            aff_smoothing_sigmas=aff_smoothing_sigmas,
+                            grad_step=grad_step, flow_sigma=flow_sigma, 
+                            total_sigma=total_sigma,
+                            aff_sampling=aff_sampling, 
+                            syn_sampling=syn_sampling)
+        ind = i + ref_t
+        image[ind] = antspy_drift(ref[ch],tim,shift=shift['fwdtransforms'],check=True)
+    for i, tim in image[0:ref_t]:
+        shift = antspy_regi(ref, tim, drift_corr, metric,
+                            reg_iterations=reg_iterations, 
+                            aff_iterations=aff_iterations, 
+                            aff_shrink_factors=aff_shrink_factors, 
+                            aff_smoothing_sigmas=aff_smoothing_sigmas,
+                            grad_step=grad_step, flow_sigma=flow_sigma, 
+                            total_sigma=total_sigma,
+                            aff_sampling=aff_sampling, 
+                            syn_sampling=syn_sampling)
+        image[i] = antspy_drift(ref[ch],tim,shift=shift['fwdtransforms'],check=True)    
     if save == True:
         for ch, img in image.items():
             img_save = img_limits(image[ch])
@@ -503,6 +558,7 @@ def main():
            image_4D = {ch:io.imread(files_list[ind]) for ind, ch in enumerate(temp)} 
     elif os.path.isfile(input_txt['path_to_data']):
         image_4D = {nput_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
+
 
 
     
