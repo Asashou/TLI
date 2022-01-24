@@ -144,7 +144,7 @@ def img_limits(img, limit=2000, ddtype=np.uint16):
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype=np.uint8):
+                xy_pixel=1, z_pixel=1, ddtype=np.uint8, dim='TZYX'):
     """
     read files_list, load the individual 3D_img tifffiles, 
     and convert them into a dict of 4D-arrays of the identified ch
@@ -158,6 +158,8 @@ def files_to_4D(files_list, ch_names=[''],
         for ch in ch_names:
             image_4D[ch].append(image[ch])
     for ch in ch_names:
+        dims = [len(img) for img in image_4D[ch]]
+        image_4D[ch] = [stack[0:min(dims)] for stack in image_4D[ch]]
         image_4D[ch] = np.array(image_4D[ch])
         if save == True:
             if save_path[-1] != '/':
@@ -174,7 +176,7 @@ def files_to_4D(files_list, ch_names=[''],
             if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
                 save_name += '.tif'
             img_save = img_limits(image_4D[ch], limit=0, ddtype=ddtype)
-            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
         return image_4D
 
 def img_subset(img, subset):
@@ -489,7 +491,7 @@ def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='',
         if '.tif' not in save_name:
             save_name +='.tif'
         img_save = img_limits(predict)
-        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
     return predict
 
 def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
@@ -576,21 +578,27 @@ def main():
             image_4D[ch] = img[:,input_txt['reg_subset'][0]:input_txt['reg_subset'][1]]
     
     if 'n2v' in input_txt['steps']:
-        for ind, stack in image_4D[input_txt['ch_names'][-1]]:
-            image_4D[input_txt['ch_names'][-1]][ind] = N2V_predict(image=stack,
+        for ind, stack in enumerate(image_4D[input_txt['ch_names'][-1]]):
+            image_4D[input_txt['ch_names'][0]][ind] = N2V_predict(image=stack,
                                                                     model_name=input_txt['model_name'], 
                                                                     model_path=input_txt['model_path'], 
-                                                                    save=True, save_path=input_txt['save_path'],
+                                                                    save=False, save_path=input_txt['save_path'],
                                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D)
+        name = input_txt['save_path']+'N2V_GFP_'+file_4D
+        save_image(name, image_4D[input_txt['ch_names'][0]][ind], 
+                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'], dim='TZYX')
     if 'clahe' in input_txt['steps']:
-        for ind, stack in image_4D[input_txt['ch_names'][-1]]:
-            image_4D[input_txt['ch_names'][-1]][ind] = apply_clahe(kernel_size=input_txt['kernel_size'], 
+        for ind, stack in enumerate(image_4D[input_txt['ch_names'][-1]]):
+            image_4D[input_txt['ch_names'][0]][ind] = apply_clahe(kernel_size=input_txt['kernel_size'], 
                                                                     image=img, clipLimit=input_txt['clipLimit'], 
                                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
-                                                                    save=True, save_path=input_txt['save_path'], 
+                                                                    save=False, save_path=input_txt['save_path'], 
                                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D)
-    
+        name = input_txt['save_path']+'Clahe_GFP_'+file_4D
+        save_image(name, image_4D[input_txt['ch_names'][0]][ind], 
+                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'], dim='TZYX')
+
     # if 'ants' in input_txt['steps']:
     #     parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
     #                   'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
