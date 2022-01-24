@@ -536,7 +536,6 @@ def main():
     
     ##### this part is for reading variables' values and info.txt
     input_txt = txt2dict(args.txt_path)
-
     #######
     if os.path.isdir(input_txt['path_to_data']):
         files_list = get_file_names(input_txt['path_to_data'], 
@@ -558,6 +557,19 @@ def main():
            image_4D = {ch:io.imread(files_list[ind]) for ind, ch in enumerate(temp)} 
     elif os.path.isfile(input_txt['path_to_data']):
         image_4D = {nput_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
+        files_list = [i for i in np.arange(len(image_4D))]
+    
+    if 'preshift' in input_txt['steps']:
+        pre_shifts = {}
+        current_shift = [0 for i in image_4D[0].shape]
+        for ind, stack in enumerate(image_4D):
+            pre_shifts[files_list[ind]] = phase_corr(image_4D[0], stack, input_txt['sigma']) 
+            current_shift = [sum(x) for x in zip(current_shift, pre_shifts[files_list[ind]])]  
+            image_4D[ind] = ndimage.shift(image_4D[ind], current_shift)    
+            print('current pre_shift', current_shift) 
+        if input_txt['save_pre_shift'] == True:
+            name = input_txt['save_path']+'preshifted_4D_image.tif'
+            save_image(name, image_4D, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
 
 
 
