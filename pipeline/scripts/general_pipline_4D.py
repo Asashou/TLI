@@ -424,10 +424,13 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
                   check_ch='',                       
                   save=True, save_path='',save_file=''):
     """"""
-    if isinstance(image, dict):
-        image = {ch_names:image}
+    if isinstance(image, dict) == False:
+        image = {ch_names[0]:image}
     for ch in ch_names:
+        try:
             image[ch] = ants.from_numpy(np.float32(image[ch]))
+        except:
+            pass
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
     fixed = {image[ch][ref_t].copy() for ch in ch_names}
