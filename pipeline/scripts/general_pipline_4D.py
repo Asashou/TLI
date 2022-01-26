@@ -1,6 +1,7 @@
 # We import all our dependencies.
 import argparse
 import os
+from pickle import FALSE
 import cv2 as cv
 import numpy as np 
 import tifffile as tif
@@ -101,7 +102,7 @@ def txt2dict(path):
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['compile','preshift', 'postshift', 'ants', 'n2v', 'clahe', 'mask']
+        input_txt['steps'] = ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask']
     if 'check_ch' not in input_txt['ch_names']:
         print('channel defined for similarity_check not recognized, so ch_0 used')
         input_txt['check_ch'] = input_txt['ch_names'][0]
@@ -128,19 +129,30 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
     return file_list
 
 def img_limits(img, limit=2000, ddtype=np.uint16):
-    max_limits = {np.uint8: 256, np.uint16: 65536}
+    max_limits = {np.uint8: 255, np.uint16: 65530}
     print('image old limits', img.min(), img.max())
     img = img - img.min()
     if limit == 0:
         limit = img.max()
     if limit > max_limits[ddtype]:
-        print('the limit provided is larger than alocated dtype. limit reassigned as appropriate')
         limit = max_limits[ddtype]
+        print('the limit provided is larger than alocated dtype. limit reassigned as appropriate', limit)
     img = img/img.max()
     img = img*limit
     img = img.astype(ddtype)
-    print('image new limits and type', img.min(), img.max(), img.dtype)
+    print('image new limits and type', img.min(), img.max(), img.dtype, 'with limit', limit)
     return img
+
+def split_convert(image, ch_names):
+    """deinterleave the image into dictionary of two channels"""
+    image_ch = {}
+    for ind, ch in enumerate(ch_names):
+        image_ch[ch] = image[ind::len(ch_names)]
+    # if len(ch_names) > 1:
+    #     image_ch[ch_names[-1]] = filters.median(image_ch[ch_names[-1]])
+    for ch, img in image_ch.items():
+        image_ch[ch] = img_limits(img, limit=0)
+    return image_ch
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
@@ -157,27 +169,32 @@ def files_to_4D(files_list, ch_names=[''],
         image = split_convert(image, ch_names=ch_names)
         for ch in ch_names:
             image_4D[ch].append(image[ch])
+    z_dim = min([len(img) for img in image_4D[ch_names[0]]])
+    print(image_4D.keys(), type(image_4D[ch_names[-1]]), len(image_4D[ch_names[-1]]))
     for ch in ch_names:
-        dims = [len(img) for img in image_4D[ch]]
-        image_4D[ch] = [stack[0:min(dims)] for stack in image_4D[ch]]
+        print('compiling the', ch, 'channel')
+        image_4D[ch] = [stack[0:z_dim] for stack in image_4D[ch]]
         image_4D[ch] = np.array(image_4D[ch])
-        if save == True:
-            if save_path[-1] != '/':
-                save_path += '/'
-            if save_file == '':
-                name1 = os.path.basename(files_list[0])
-                name2 = os.path.basename(files_list[1])
-                for s in name1:
-                    if s in name2:
-                        save_file += s
-                    else:
-                        break
+    if save == True:
+        if save_path[-1] != '/':
+            save_path += '/'
+        if save_file == '':
+            name1 = os.path.basename(files_list[0])
+            name2 = os.path.basename(files_list[1])
+            for s in name1:
+                if s in name2:
+                    save_file += s
+                else:
+                    break
+        for ch, img in image_4D.items():
             save_name = save_path+'4D_'+ch+'_'+save_file
             if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
                 save_name += '.tif'
-            img_save = img_limits(image_4D[ch], limit=0, ddtype=ddtype)
-            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
-        return image_4D
+            for tim, stack in enumerate(img):
+                img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
+    print(image_4D.keys(), type(image_4D[ch_names[-1]]), len(image_4D[ch_names[-1]]))
+    return image_4D
 
 def img_subset(img, subset):
     print('subsetting the image')
@@ -208,18 +225,7 @@ def rot_flip(img, flip, angle=0):
         print('rotated image by', angle)
     return flipped
 
-def split_convert(image, ch_names):
-    """deinterleave the image into dictionary of two channels"""
-    image_ch = {}
-    for ind, ch in enumerate(ch_names):
-        image_ch[ch] = image[ind::len(ch_names)]
-    if len(ch_names) > 1:
-        image_ch[ch_names[-1]] = filters.median(image_ch[ch_names[-1]])
-    for ch, img in image_ch.items():
-        image_ch[ch] = img_limits(img, limit=0)
-    return image_ch
-
-def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4, dim='ZYX'):
+def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4, dim='TZYX'):
     """save provided image by name with provided xy_pixel, and z_pixel resolution as metadata"""
     tif.imwrite(name, image, imagej=True, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
@@ -446,13 +452,12 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             image[ch][i] = shifted[ch] 
     if save == True:
         for ch, img in image.items():
-            img_save = img_limits(image[ch])
+            img_save = img_limits(img)
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
             save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shifts
-
 def phase_corr(fixed, moving, sigma):
     if fixed.shape > moving.shape:
         print('fixed image is larger than moving', fixed.shape, moving.shape)
@@ -533,7 +538,8 @@ def main():
     
     ##### this part is for reading variables' values and info.txt
     input_txt = txt2dict(args.txt_path)
-    #######
+    
+    ####### compiling the single 3D tif files to 4D_image, or reading 4D_image(s)
     file_4D = input_txt['group'].split('_')[0]+'.tif'
     if os.path.isdir(input_txt['path_to_data']):
         files_list = get_file_names(input_txt['path_to_data'], 
@@ -542,6 +548,7 @@ def main():
         print('the first 5 files (including ref) are', files_list[0:5])
         if 'compile' in input_txt['steps']:
             # loading raw skimage files into 4D array and saving raw 4D
+            print('compiling 3D image_files into dict of 4D_images of specified channels')
             image_4D = files_to_4D(files_list, ch_names=input_txt['ch_names'], save=True, 
                                 save_path=input_txt['save_path'], 
                                 save_file='raw_'+file_4D, 
@@ -556,9 +563,13 @@ def main():
         image_4D = {input_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
         files_list = [i for i in np.arange(len(image_4D))]
         file_4D = os.path.basename(input_txt['path_to_data'])
-        file_4D = file_4D.split('_')[0]+'.tif'
-    
+        file_4D = file_4D.split('_')[0]+'.tif'    
+    print(type(image_4D), image_4D.keys(), type(image_4D[input_txt['ch_names'][-1]]), len(image_4D[input_txt['ch_names'][-1]]))
+    # print(image_4D.items(), image_4D[input_txt['ch_names'][-1]].shape)
+
+    ####### initial registration of images using phase_correlation on red channel, last channel
     if 'preshift' in input_txt['steps']:
+        print('applying preshift')
         pre_shifts = {}
         ref_im = image_4D[input_txt['ch_names'][-1]]
         current_shift = [0 for i in ref_im[0].shape]
@@ -571,12 +582,99 @@ def main():
         if input_txt['save_pre_shift'] == True:
             for ch, img in image_4D.items():
                 name = input_txt['save_path']+'PhaseCorr_'+ch+'_'+file_4D
-                save_image(name, img, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
+                save_image(name, img, xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],dim='TZYX')
 
-    if 'subset' in input_txt['steps']:
+        shift_file = input_txt['save_path']+"PhaseCorr_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'phase_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, shift in pre_shifts.items():
+                writer.writerow({'timepoint' : timepoint, 'phase_shift' : shift})
+        csvfile.close()
+
+    ###### optional deletion of last quater of slices in Z_dim of each 3D image
+    #### this is to reduce the run time for Ants a little bit
+    if 'trim' in input_txt['steps']:
+        trim = int((3*image_4D[input_txt['ch_names'][-1]].shape[1])/4)
+        print('trimming all images in Z dim to 0:', trim)
         for ch, img in image_4D.items():
-            image_4D[ch] = img[:,input_txt['reg_subset'][0]:input_txt['reg_subset'][1]]
-    
+            image_4D[ch] = img[:,0:trim]
+
+    ###### applying Ants registration based on the last (red) channel
+    if 'ants' in input_txt['steps']:
+        parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
+                      'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
+                      'syn_sampling':32, 'reg_iterations':(40,20,0), 
+                      'aff_iterations':(2100,1200,1200,10), 
+                      'aff_shrink_factors':(6,4,2,1), 
+                      'aff_smoothing_sigmas':(3,2,1,0)}
+        for para in parameters.keys():
+            try:
+                parameters[para] = input_txt[para]
+            except:
+                pass
+        if 'ants_ref_st' not in input_txt.keys():
+            input_txt['ants_ref_st'] = 0
+        ref_t = input_txt['ants_ref_st']
+        if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
+            ref_t = 0
+        ants_shifts = {}
+        for i, drift_t in enumerate(input_txt['drift_corr']):
+            ants_step = str(i+1)+'_'+drift_t
+            try:
+                metric_t = input_txt['metric'][i]
+            except:
+                for i in [0]:
+                    print('optimization metric not recognized. mattes used instead')
+                    metric_t = 'mattes'            
+            image_4D, ants_shifts[ants_step] = apply_ants_4D(image_4D, 
+                                                            drift_corr=drift_t,  
+                                                            xy_pixel=input_txt['xy_pixel'], 
+                                                            z_pixel=input_txt['z_pixel'], 
+                                                            ch_names=input_txt['ch_names'], 
+                                                            ref_t=ref_t,
+                                                            ref_ch=-1, 
+                                                            metric=metric_t,
+                                                            reg_iterations=parameters['reg_iterations'], 
+                                                            aff_iterations=parameters['aff_iterations'], 
+                                                            aff_shrink_factors=parameters['aff_shrink_factors'], 
+                                                            aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
+                                                            grad_step=parameters['grad_step'], 
+                                                            flow_sigma=parameters['flow_sigma'], 
+                                                            total_sigma=parameters['total_sigma'],
+                                                            aff_sampling=parameters['aff_sampling'], 
+                                                            syn_sampling=parameters['syn_sampling'], 
+                                                            check_ch=input_txt['ch_names'][0],                       
+                                                            save=True, 
+                                                            save_path=input_txt['save_path'],
+                                                            save_file=str(i+1)+'_'+file_4D)
+            print('finished ants run with', drift_t)
+        ###### saving shifts mats as csv
+        shift_file = input_txt['save_path']+"ants_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['reg_step', 'timepoint', 'ants_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for reg_step, shifts in ants_shifts.items():
+                for timepoint, ind_shift in shifts.items():
+                    writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
+        csvfile.close()  
+        ###### doing final similarity check after antspy, and saving values
+        similairties = {}
+        for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
+            img_t = image_4D[input_txt['ch_names'][0]][t]
+            similairties[t+1] = check_similarity(img_t, img)
+        checks_file = input_txt['save_path']+"similarity_check.csv"
+        with open(checks_file, 'w', newline='') as csvfile:
+            fieldnames = ['reg_step', 'file', 'similarity_check']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for reg_step, checks in similarity_check.items():
+                for file, similarity_check in checks.items():
+                    writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
+        csvfile.close()
+
     if 'n2v' in input_txt['steps']:
         for ind, stack in enumerate(image_4D[input_txt['ch_names'][-1]]):
             image_4D[input_txt['ch_names'][0]][ind] = N2V_predict(image=stack,
@@ -598,6 +696,10 @@ def main():
         name = input_txt['save_path']+'Clahe_GFP_'+file_4D
         save_image(name, image_4D[input_txt['ch_names'][0]][ind], 
                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'], dim='TZYX')
+    
+    ###### masking 
+    # if 'mask' in input_txt['steps']:
+
 
     # if 'ants' in input_txt['steps']:
     #     parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
