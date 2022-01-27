@@ -156,7 +156,7 @@ def split_convert(image, ch_names):
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype=np.uint8, dim='TZYX'):
+                xy_pixel=1, z_pixel=1, ddtype=np.uint8):
     """
     read files_list, load the individual 3D_img tifffiles, 
     and convert them into a dict of 4D-arrays of the identified ch
@@ -192,7 +192,7 @@ def files_to_4D(files_list, ch_names=[''],
                 save_name += '.tif'
             for tim, stack in enumerate(img):
                 img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
-            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)
     print(image_4D.keys(), type(image_4D[ch_names[-1]]), len(image_4D[ch_names[-1]]))
     return image_4D
 
@@ -225,8 +225,12 @@ def rot_flip(img, flip, angle=0):
         print('rotated image by', angle)
     return flipped
 
-def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4, dim='TZYX'):
+def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
     """save provided image by name with provided xy_pixel, and z_pixel resolution as metadata"""
+    if len(image.shape) == 3:
+        dim = 'ZYX'
+    elif len(image.shape) == 4:
+        dim = 'TZYX'
     tif.imwrite(name, image, imagej=True, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
 
@@ -433,24 +437,30 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             pass
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
-    fixed = {image[ch][ref_t].copy() for ch in ch_names}
+    print(type(image), type(image[ch_names[0]]))
+    fixed = {image[ch][ref_t] for ch in ch_names}
     scope = np.arange(0,ref_t)
     scope = np.concatenate((scope, np.arange(ref_t,len(image[ch_names[-1]]))))
     print('ants seq for 4D regi',scope)
     shifts = {}
     for i in scope:
         moving = {image[ch][i].copy() for ch in ch_names}
-        shifted, shifts[i] = apply_ants_channels(fixed, moving, drift_corr=drift_corr,  xy_pixel=xy_pixel, 
-                        z_pixel=z_pixel, ch_names=ch_names, ref_ch=ref_ch,
-                        metric=metric,
-                        reg_iterations=reg_iterations, 
-                        aff_iterations=aff_iterations, 
-                        aff_shrink_factors=aff_shrink_factors, 
-                        aff_smoothing_sigmas=aff_smoothing_sigmas,
-                        grad_step=grad_step, flow_sigma=flow_sigma, total_sigma=total_sigma,
-                        aff_sampling=aff_sampling, syn_sampling=syn_sampling,  
-                        check_ch=check_ch,                       
-                        save=save, save_path=save_path,save_file=save_file)
+        shifted, shifts[i] = apply_ants_channels(fixed, moving, drift_corr=drift_corr,  
+                                                xy_pixel=xy_pixel, 
+                                                z_pixel=z_pixel, ch_names=ch_names, 
+                                                ref_ch=ref_ch,
+                                                metric=metric,
+                                                reg_iterations=reg_iterations, 
+                                                aff_iterations=aff_iterations, 
+                                                aff_shrink_factors=aff_shrink_factors, 
+                                                aff_smoothing_sigmas=aff_smoothing_sigmas,
+                                                grad_step=grad_step, flow_sigma=flow_sigma, 
+                                                total_sigma=total_sigma,
+                                                aff_sampling=aff_sampling, 
+                                                syn_sampling=syn_sampling,  
+                                                check_ch=check_ch,                       
+                                                save=save, save_path=save_path,
+                                                save_file=save_file)
         for ch in ch_names:
             image[ch][i] = shifted[ch] 
     if save == True:
@@ -461,6 +471,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
                 save_name += '.tif'
             save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shifts
+
 def phase_corr(fixed, moving, sigma):
     if fixed.shape > moving.shape:
         print('fixed image is larger than moving', fixed.shape, moving.shape)
@@ -482,6 +493,49 @@ def phase_corr(fixed, moving, sigma):
             print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
 
+def phase_corr_4D(image, sigma, xy_pixel, 
+                  z_pixel, ch_names=[1], 
+                  ref_ch=-1,                      
+                  save=True, save_path='',
+                  save_file='', save_shifts=True):
+    if isinstance(image, dict) == False:
+        image = {ch_names[0]:image}
+    pre_shifts = {}
+    if len(ch_names) == 1:
+        ref_ch = ch_names[0]
+    else:
+        try:
+            ref_ch = ch_names[ref_ch]
+        except:
+            ref_ch = ch_names[-1]
+    ref_im = image[ref_ch]
+    current_shift = [0 for i in ref_im[0].shape]
+    print('initial shift of 0', current_shift)
+    print(len(ref_im[1:]), ref_im[1].shape)
+    for ind, stack in enumerate(ref_im[1:]):
+        pre_shifts[ind+1] = phase_corr(ref_im[ind], stack, sigma) 
+        current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
+        print(pre_shifts[ind+1], current_shift)
+        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
+        for ch, img in image.items(): 
+            image[ch][ind] = ndimage.shift(img[ind], current_shift) 
+    if save == True:
+        for ch, img in image.items():
+            name = save_path+'PhaseCorr_'+ch+'_'+save_file
+            save_image(name, img, xy_pixel=xy_pixel, 
+                        z_pixel=z_pixel)
+    if save_shifts == True:
+        shift_file = save_path+"PhaseCorr_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'phase_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, shift in pre_shifts.items():
+                writer.writerow({'timepoint' : timepoint+1, 'phase_shift' : shift})
+        csvfile.close()
+    return image, pre_shifts
+
+
 def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
     if save is True, save predicted image with provided info"""
@@ -499,7 +553,7 @@ def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='',
         if '.tif' not in save_name:
             save_name +='.tif'
         img_save = img_limits(predict)
-        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel, dim='TZYX')
+        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
 
 def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
@@ -573,29 +627,13 @@ def main():
     ####### initial registration of images using phase_correlation on red channel, last channel
     if 'preshift' in input_txt['steps']:
         print('applying preshift')
-        pre_shifts = {}
-        ref_im = image_4D[input_txt['ch_names'][-1]]
-        current_shift = [0 for i in ref_im[0].shape]
-        for ind, stack in enumerate(ref_im):
-            pre_shifts[files_list[ind]] = phase_corr(ref_im[0], stack, input_txt['sigma']) 
-            current_shift = [sum(x) for x in zip(current_shift, pre_shifts[files_list[ind]])] 
-            print('current pre_shift', current_shift)
-            for ch, img in image_4D.items(): 
-                image_4D[ch][ind] = ndimage.shift(img[ind], current_shift) 
-        if input_txt['save_pre_shift'] == True:
-            for ch, img in image_4D.items():
-                name = input_txt['save_path']+'PhaseCorr_'+ch+'_'+file_4D
-                save_image(name, img, xy_pixel=input_txt['xy_pixel'], 
-                            z_pixel=input_txt['z_pixel'],dim='TZYX')
-
-        shift_file = input_txt['save_path']+"PhaseCorr_shifts.csv"
-        with open(shift_file, 'w', newline='') as csvfile:
-            fieldnames = ['timepoint', 'phase_shift']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for timepoint, shift in pre_shifts.items():
-                writer.writerow({'timepoint' : timepoint, 'phase_shift' : shift})
-        csvfile.close()
+        image_4D, pre_shifts = phase_corr_4D(image_4D, sigma=input_txt['sigma'], 
+                                            xy_pixel=input_txt['xy_pixel'], 
+                                            z_pixel=input_txt['z_pixel'], 
+                                            ch_names=input_txt['ch_names'], 
+                                            ref_ch=-1, save=True, 
+                                            save_path=input_txt['save_path'],
+                                            save_file=file_4D, save_shifts=True)
 
     ###### optional deletion of last quater of slices in Z_dim of each 3D image
     #### this is to reduce the run time for Ants a little bit
@@ -689,7 +727,7 @@ def main():
                                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D)
         name = input_txt['save_path']+'N2V_GFP_'+file_4D
         save_image(name, image_4D[input_txt['ch_names'][0]][ind], 
-                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'], dim='TZYX')
+                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
     if 'clahe' in input_txt['steps']:
         for ind, stack in enumerate(image_4D[input_txt['ch_names'][-1]]):
             image_4D[input_txt['ch_names'][0]][ind] = apply_clahe(kernel_size=input_txt['kernel_size'], 
@@ -699,7 +737,7 @@ def main():
                                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D)
         name = input_txt['save_path']+'Clahe_GFP_'+file_4D
         save_image(name, image_4D[input_txt['ch_names'][0]][ind], 
-                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'], dim='TZYX')
+                    xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'])
     
     ###### masking 
     # if 'mask' in input_txt['steps']:
