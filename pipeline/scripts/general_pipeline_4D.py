@@ -190,10 +190,11 @@ def files_to_4D(files_list, ch_names=[''],
             save_name = save_path+'4D_'+ch+'_'+save_file
             if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
                 save_name += '.tif'
-            for tim, stack in enumerate(img):
-                img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
-            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    print(image_4D.keys(), type(image_4D[ch_names[-1]]), len(image_4D[ch_names[-1]]))
+            save_img = img.copy()
+            for tim, stack in enumerate(save_img):
+                save_img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
+            save_image(save_name, save_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    print('image_properties', image_4D.keys(), type(image_4D[ch_names[-1]]), 'saved_image dtype', type(save_img))
     return image_4D
 
 def img_subset(img, subset):
@@ -231,7 +232,7 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
         dim = 'ZYX'
     elif len(image.shape) == 4:
         dim = 'TZYX'
-    tif.imwrite(name, image, imagej=True, resolution=(1./xy_pixel, 1./xy_pixel),
+    tif.imwrite(name, image, imagej=True, dtype=image.dtype, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
 
 def mask_image(volume, return_mask = False ,sig = 2):
@@ -430,6 +431,9 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
     """"""
     if isinstance(image, dict) == False:
         image = {ch_names[0]:image}
+    scope = np.arange(0,ref_t)
+    scope = np.concatenate((scope, np.arange(ref_t,len(image[ch_names[-1]]))))
+    print('ants seq for 4D regi',scope)
     for ch in ch_names:
         try:
             image[ch] = ants.from_numpy(np.float32(image[ch]))
@@ -437,14 +441,14 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             pass
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
-    print(type(image), type(image[ch_names[0]]))
-    fixed = {image[ch][ref_t] for ch in ch_names}
-    scope = np.arange(0,ref_t)
-    scope = np.concatenate((scope, np.arange(ref_t,len(image[ch_names[-1]]))))
-    print('ants seq for 4D regi',scope)
+    # print(type(image), type(image[ch_names[0]]))
+    # fixed = {}
+    # for ch in ch_names:
+    #     fixed[ch] = image[ch][ref_t]
+    fixed = {ch: img[ref_t].copy() for ch, img in image.items()}
     shifts = {}
     for i in scope:
-        moving = {image[ch][i].copy() for ch in ch_names}
+        moving = {ch: img[i].copy() for ch, img in image.items()}
         shifted, shifts[i] = apply_ants_channels(fixed, moving, drift_corr=drift_corr,  
                                                 xy_pixel=xy_pixel, 
                                                 z_pixel=z_pixel, ch_names=ch_names, 
@@ -621,8 +625,10 @@ def main():
         files_list = [i for i in np.arange(len(image_4D))]
         file_4D = os.path.basename(input_txt['path_to_data'])
         file_4D = file_4D.split('_')[0]+'.tif'    
-    print(type(image_4D), image_4D.keys(), type(image_4D[input_txt['ch_names'][-1]]), len(image_4D[input_txt['ch_names'][-1]]))
-    # print(image_4D.items(), image_4D[input_txt['ch_names'][-1]].shape)
+    
+    if 'output_name' in input_txt.keys():
+        file_4D = input_txt['output_name']
+    # print(type(image_4D), image_4D.keys(), type(image_4D[input_txt['ch_names'][-1]]), len(image_4D[input_txt['ch_names'][-1]]))
 
     ####### initial registration of images using phase_correlation on red channel, last channel
     if 'preshift' in input_txt['steps']:
@@ -639,9 +645,11 @@ def main():
     #### this is to reduce the run time for Ants a little bit
     if 'trim' in input_txt['steps']:
         trim = int((3*image_4D[input_txt['ch_names'][-1]].shape[1])/4)
+        print('image size before trimming is', image_4D[input_txt['ch_names'][-1]].shape)
         print('trimming all images in Z dim to 0:', trim)
         for ch, img in image_4D.items():
             image_4D[ch] = img[:,0:trim]
+        print('image size after trimming is', image_4D[input_txt['ch_names'][-1]].shape)
 
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
@@ -669,7 +677,7 @@ def main():
             except:
                 for i in [0]:
                     print('optimization metric not recognized. mattes used instead')
-                    metric_t = 'mattes'            
+                    metric_t = 'mattes'
             image_4D, ants_shifts[ants_step] = apply_ants_4D(image_4D, 
                                                             drift_corr=drift_t,  
                                                             xy_pixel=input_txt['xy_pixel'], 
