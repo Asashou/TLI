@@ -32,7 +32,7 @@ model_name: n2v_3D_v6
 
 ### registration sequence
 reference_last: false
-ants_ref_no: 01.tif
+ants_ref_st: 01.tif
 ref_reset: 50
 
 ### registration parameters
