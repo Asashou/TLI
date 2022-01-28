@@ -218,18 +218,18 @@ def mask_image(volume, return_mask = False ,sig = 2):
     else:
         return mask
 
-def mask_subset(image, xy_pixel, z_pixel, sig=2, file='', save=True, save_path='', save_file=''):
+def mask_3D(image, xy_pixel, z_pixel, sig=2, file='', save=True, save_path='', save_file=''):
     if file != '':
-        image = Image.open(file)
-        image = np.array(image)
+        image = tif.imread(file)
+        # image = np.array(image)
     file_name = os.path.basename(file)
-    mask = image.copy()
+    # mask = image.copy()
     for i, img in enumerate(image):
         try:
-            mask[i] = mask_image(img, return_mask=False ,sig=sig)
+            image[i] = mask_image(img, return_mask=True ,sig=sig)
         except:
-            mask[i] = mask[i]
-    img_limits(mask, limit=2000, ddtype=np.uint16)
+            image[i] = image[i]
+    img_limits(mask, limit=255, ddtype=np.uint8)
     if save == True:
         if save_file == '':
             save_name = save_path+'mask_'+file_name
@@ -237,9 +237,23 @@ def mask_subset(image, xy_pixel, z_pixel, sig=2, file='', save=True, save_path='
             save_name = save_path+'mask_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        img_save = img_limits(mask, limit=2000)
-        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    return mask
+        # img_save = img_limits(mask, limit=255)
+        save_image(save_name, image, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return image
+
+def mask_4D(image_4D, xy_pixel, z_pixel, sig=2, save=True, save_path='', save_file=''):
+    for ind, stack in enumerate(image_4D):
+        image_4D[ind] = mask_3D(stack, sig=sig, save=False)
+    if save == True:
+        if save_file == '':
+            save_name = save_path+'mask_4D.tif'
+        else:
+            save_name = save_path+'mask_'+save_file
+        if '.tif' not in save_name:
+            save_name += '.tif'
+        # img_save = img_limits(mask, limit=255)
+        save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return image_4D
 
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 reg_iterations=(40,20,0), 
@@ -385,11 +399,11 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
     """apply N2V prediction on image based on provided model
     if save is True, save predicted image with provided info"""
     if file != '':
-        image = Image.open(file)
-        image = np.array(image)
+        image = tif.imread(file)
     file_name = os.path.basename(file)
     model = N2V(config=None, name=model_name, basedir=model_path)
     predict = model.predict(image, axes='ZYX', n_tiles=None)
+    predict = img_limits(predict, limit=0)
     if save == True:
         if save_file == '':
             save_name = str(save_path+'N2V_'+file_name)
@@ -397,9 +411,24 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
             save_name = str(save_path+'N2V_'+save_file)
         if '.tif' not in save_name:
             save_name +='.tif'
-        img_save = img_limits(predict)
-        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        save_image(save_name, predict, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
+
+def N2V_4D(image_4D, model_name, model_path, xy_pixel, z_pixel, save=True, save_path='', save_file=''):
+    for ind, stack in enumerate(image_4D):
+        image_4D[ind] = N2V_predict(image=stack,
+                                    model_name=model_name, 
+                                    model_path=model_path, 
+                                    save=False)
+    if save == True:
+        if save_file == '':
+            save_name = str(save_path+'N2V_4D.tif')
+        else:
+            save_name = str(save_path+'N2V_'+save_file)
+        if '.tif' not in save_name:
+            save_name +='.tif'
+        save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return image_4D
 
 def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
     """apply Clahe on image based on provided kernel_size and clipLimit
@@ -419,6 +448,7 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
                             thresh=np.percentile(image_clahe[ind], 95), 
                             maxval=image_clahe[ind].max(), 
                             type= cv.THRESH_TOZERO)[1]
+    image_clahe = img_limits(image_clahe, limit=0)
     if save == True:
         if save_file == '':
             save_name = save_path+'clahe_'+file_name
@@ -426,9 +456,24 @@ def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, s
             save_name = save_path+'clahe_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        img_save = img_limits(image_clahe, limit=0)
-        save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        save_image(save_name, image_clahe, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_clahe
+
+def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+    for ind, stack in enumerate(image_4D):
+        image_4D[ind] = apply_clahe(image=stack,
+                                    kernel_size=kernel_size, 
+                                    clipLimit=clipLimit, 
+                                    save=False)
+    if save == True:
+        if save_file == '':
+            save_name = str(save_path+'clahe_4D.tif')
+        else:
+            save_name = str(save_path+'clahe_'+save_file)
+        if '.tif' not in save_name:
+            save_name +='.tif'
+        save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return image_4D
 ######################
 
 
