@@ -128,7 +128,7 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
         file_list.sort(reverse=order)    
     return file_list
 
-def img_limits(img, limit=2000, ddtype=np.uint16):
+def img_limits(img, limit=0, ddtype=np.uint16):
     max_limits = {np.uint8: 255, np.uint16: 65530}
     print('image old limits', img.min(), img.max())
     img = img - img.min()
@@ -407,28 +407,28 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
     shifted = image.copy()
+    print(shift['fwdtransforms'])
     for ch, img in shifted.items():
         shifted[ch]= antspy_drift(ref[ch],img,shift=shift['fwdtransforms'],check=False)
     if check_ch in image.keys():
-        check_ref = ref[check_ch].numpy()
+        check_ref = ref[check_ch].numpy().copy()
         pre_check = check_similarity(check_ref, image[check_ch].numpy())
         post_check = check_similarity(check_ref, shifted[check_ch])
-        print('similarity_check', pre_check, 'improved to', post_check)
-        image = shifted.copy()
-        if (pre_check - post_check) > 0.1:
-            for ch, img in shifted.items():
-                image[ch] = img.numpy() 
-            print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
+        if (pre_check - post_check) <= 0.1:
+            print('similarity_check', pre_check, 'improved to', post_check)
+            image = shifted
+        elif (pre_check - post_check) > 0.1:
+            print('similarity_check was smaller after shift, so it was ignored:', pre_check, '>>', post_check)
     else:
         print(check_ch, 'not a recognized ch in image')
-        image = shifted.copy()
-    if save == True:
-        for ch, img in image.items():
-            img_save = img_limits(image[ch])
+        image = shifted
+    for ch, img in image.items():
+        image[ch] = img_limits(img)
+        if save == True:
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
+            save_image(save_name, image[ch], xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shift
 
 def apply_ants_4D(image, drift_corr,  xy_pixel, 
@@ -455,11 +455,8 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             pass
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
-    # print(type(image), type(image[ch_names[0]]))
-    # fixed = {}
-    # for ch in ch_names:
-    #     fixed[ch] = image[ch][ref_t]
     fixed = {ch: img[ref_t].copy() for ch, img in image.items()}
+    print(ref_t, ref_ch, fixed[ref_ch].shape)
     shifts = {}
     for i in scope:
         moving = {ch: img[i].copy() for ch, img in image.items()}
@@ -483,11 +480,10 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
             image[ch][i] = shifted[ch] 
     if save == True:
         for ch, img in image.items():
-            img_save = img_limits(img)
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            save_image(save_name, img_save, xy_pixel=xy_pixel, z_pixel=z_pixel)       
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shifts
 
 def phase_corr(fixed, moving, sigma):
