@@ -24,7 +24,7 @@ from sklearn import metrics
 from skimage.filters import gaussian, threshold_otsu
 from scipy import ndimage
 from tqdm import tqdm
-# import h5py
+# import Neurosetta # this is the package that Nik Drummond wrote, and it can replace some functions once implemented
 
 # functions
 def mem_use():
@@ -109,7 +109,7 @@ def txt2dict(path):
     print(input_txt)
     return input_txt
 
-def get_file_names(path, group_by='', order=True, nested_files = False):
+def get_file_names(path, group_by='', order=True, nested_files=False, criteria='tif'):
     """returns a list of all files' names in the given directory and its sub-folders
     the list can be filtered based on the 'group_by' str provided
     the files_list is sorted in reverse if the order is set to True. 
@@ -125,11 +125,12 @@ def get_file_names(path, group_by='', order=True, nested_files = False):
                 for name in files:
                     file_list.append(os.path.join(path, name))
         file_list = [file for file in file_list if group_by in file]
+        file_list = [file for file in file_list if criteria in file]
         file_list.sort(reverse=order)    
     return file_list
 
-def img_limits(img, limit=0, ddtype=np.uint16):
-    max_limits = {np.uint8: 255, np.uint16: 65530}
+def img_limits(img, limit=0, ddtype='uint16'):
+    max_limits = {'uint8': 255, 'uint16': 65530}
     print('image old limits', img.min(), img.max())
     img = img - img.min()
     if limit == 0:
@@ -156,7 +157,7 @@ def split_convert(image, ch_names):
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype=np.uint8):
+                xy_pixel=1, z_pixel=1, ddtype='uint8'):
     """
     read files_list, load the individual 3D_img tifffiles, 
     and convert them into a dict of 4D-arrays of the identified ch
@@ -272,30 +273,32 @@ def mask_image(volume, return_mask = False ,sig = 2):
     else:
         return mask
 
-def mask_3D(image, xy_pixel, z_pixel, sig=2, file='', save=True, save_path='', save_file=''):
-    if file != '':
-        image = tif.imread(file)
-        # image = np.array(image)
-    file_name = os.path.basename(file)
-    # mask = image.copy()
+def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
+    mask = image.copy()
+    mask_image = image.copy()
     for i, img in enumerate(image):
         try:
-            image[i] = mask_image(img, return_mask=True ,sig=sig)
+            mask[i] = mask_image(img, return_mask=True ,sig=sig)
+            mask_image[i] = mask_image(img, return_mask=False ,sig=sig)
         except:
-            image[i] = image[i]
-    img_limits(mask, limit=255, ddtype=np.uint8)
+            mask[i] = mask[i]
+            mask_image[i] = mask_image[i]
+    mask = img_limits(mask, limit=255, ddtype='uint8')
+    mask = img_limits(mask, limit=0, ddtype='uint16')
     if save == True:
         if save_file == '':
-            save_name = save_path+'mask_'+file_name
+            save_name = save_path+'masked_image.tif'
+            mask_name = save_path+'mask.tif'
         else:
-            save_name = save_path+'mask_'+save_file
+            mask_name = save_path+'mask_'+save_file
+            save_name = save_path+'image_mask_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        # img_save = img_limits(mask, limit=255)
-        save_image(save_name, image, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    return image
+        save_image(mask_name, mask, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return mask, mask_image
 
-def mask_4D(image_4D, xy_pixel, z_pixel, sig=2, save=True, save_path='', save_file=''):
+def mask_4D(image_4D, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
     for ind, stack in enumerate(image_4D):
         image_4D[ind] = mask_3D(stack, sig=sig, save=False)
     if save == True:
@@ -374,8 +377,8 @@ def antspy_drift(fixed, moving, shift, check=True):
             print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
     return vol_shifted
 
-def apply_ants_channels(ref, image, drift_corr,  xy_pixel, 
-                        z_pixel, ch_names, ref_ch=-1,
+def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1, 
+                        z_pixel=1, ch_names=[''], ref_ch=-1,
                         metric='mattes',
                         reg_iterations=(40,20,0), 
                         aff_iterations=(2100,1200,1200,10), 
@@ -431,8 +434,8 @@ def apply_ants_channels(ref, image, drift_corr,  xy_pixel,
             save_image(save_name, image[ch], xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shift
 
-def apply_ants_4D(image, drift_corr,  xy_pixel, 
-                  z_pixel, ch_names=[1], ref_t=0,
+def apply_ants_4D(image, drift_corr,  xy_pixel=1, 
+                  z_pixel=1, ch_names=[1], ref_t=0,
                   ref_ch=-1, metric='mattes',
                   reg_iterations=(40,20,0), 
                   aff_iterations=(2100,1200,1200,10), 
@@ -456,7 +459,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
     fixed = {ch: img[ref_t].copy() for ch, img in image.items()}
-    print(ref_t, ref_ch, fixed[ref_ch].shape)
+    # print(ref_t, ref_ch, fixed[ref_ch].shape)
     shifts = {}
     for i in scope:
         moving = {ch: img[i].copy() for ch, img in image.items()}
@@ -506,8 +509,8 @@ def phase_corr(fixed, moving, sigma):
             print("couldn't perform PhaseCorr, so shift was casted as zeros")
     return shift
 
-def phase_corr_4D(image, sigma, xy_pixel, 
-                  z_pixel, ch_names=[1], 
+def phase_corr_4D(image, sigma, xy_pixel=1, 
+                  z_pixel=1, ch_names=[1], 
                   ref_ch=-1,                      
                   save=True, save_path='',
                   save_file='', save_shifts=True):
@@ -549,7 +552,7 @@ def phase_corr_4D(image, sigma, xy_pixel,
         csvfile.close()
     return image, pre_shifts
 
-def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', save=True, save_path='', save_file=''):
+def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
     if save is True, save predicted image with provided info"""
     if file != '':
@@ -568,7 +571,7 @@ def N2V_predict(model_name, model_path, xy_pixel, z_pixel, image=0, file='', sav
         save_image(save_name, predict, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return predict
 
-def N2V_4D(image_4D, model_name, model_path, xy_pixel, z_pixel, save=True, save_path='', save_file=''):
+def N2V_4D(image_4D, model_name, model_path, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
     for ind, stack in enumerate(image_4D):
         image_4D[ind] = N2V_predict(image=stack,
                                     model_name=model_name, 
@@ -584,14 +587,14 @@ def N2V_4D(image_4D, model_name, model_path, xy_pixel, z_pixel, save=True, save_
         save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_4D
 
-def apply_clahe(kernel_size, xy_pixel, z_pixel, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
+def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=1, save=True, save_path='', save_file=''):
     """apply Clahe on image based on provided kernel_size and clipLimit
     if save is True, save predicted image with provided info"""
     if file != '':
         image = imread(file)
     if image.min()<0:
         image = (image - image.min())
-    image = image.astype(np.uint16)
+    image = image.astype('uint16')
     print(image.dtype)
     file_name = os.path.basename(file)
     image_clahe= np.empty(image.shape)
@@ -657,7 +660,7 @@ def main():
                                 save_file='raw_'+file_4D, 
                                 xy_pixel=input_txt['xy_pixel'], 
                                 z_pixel=input_txt['z_pixel'], 
-                                ddtype=np.uint8)
+                                ddtype='uint16')
         else:
            temp = input_txt['ch_names'].copy()
            temp.sort()
@@ -783,12 +786,12 @@ def main():
                                                       save_file=input_txt['ch_names'][0]+'_'+file_4D)
     ##### masking 
     if 'mask' in input_txt['steps']:
-        image_4D[input_txt['ch_names'][0]] = mask_4D(image_4D[input_txt['ch_names'][0]], 
-                                                    sig=2, save=True, 
-                                                    save_path=input_txt['save_path'],
-                                                    xy_pixel=input_txt['xy_pixel'], 
-                                                    z_pixel=input_txt['z_pixel'],
-                                                    save_file=input_txt['ch_names'][-1]+'_'+file_4D)
+        mask, mask_image = mask_4D(image_4D[input_txt['ch_names'][0]], 
+                                    sig=2, save=True, 
+                                    save_path=input_txt['save_path'],
+                                    xy_pixel=input_txt['xy_pixel'], 
+                                    z_pixel=input_txt['z_pixel'],
+                                    save_file=input_txt['ch_names'][-1]+'_'+file_4D)
 
 
 
