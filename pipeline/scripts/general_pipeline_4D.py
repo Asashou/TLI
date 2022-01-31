@@ -474,8 +474,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel,
                                                 aff_sampling=aff_sampling, 
                                                 syn_sampling=syn_sampling,  
                                                 check_ch=check_ch,                       
-                                                save=save, save_path=save_path,
-                                                save_file=save_file)
+                                                save=False)
         for ch in ch_names:
             image[ch][i] = shifted[ch] 
     if save == True:
@@ -535,9 +534,10 @@ def phase_corr_4D(image, sigma, xy_pixel,
             image[ch][ind] = ndimage.shift(img[ind], current_shift) 
     if save == True:
         for ch, img in image.items():
-            name = save_path+'PhaseCorr_'+ch+'_'+save_file
-            save_image(name, img, xy_pixel=xy_pixel, 
-                        z_pixel=z_pixel)
+            save_name = str(save_path+'PhaseCorr_'+ch+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name += '.tif'
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)   
     if save_shifts == True:
         shift_file = save_path+"PhaseCorr_shifts.csv"
         with open(shift_file, 'w', newline='') as csvfile:
@@ -640,7 +640,10 @@ def main():
     input_txt = txt2dict(args.txt_path)
     
     ####### compiling the single 3D tif files to 4D_image, or reading 4D_image(s)
-    file_4D = input_txt['group'].split('_')[0]+'.tif'
+    if 'output_name' in input_txt.keys():
+        file_4D = input_txt['output_name']
+    else:    
+        file_4D = input_txt['group'].split('_')[0]+'.tif'
     if os.path.isdir(input_txt['path_to_data']):
         files_list = get_file_names(input_txt['path_to_data'], 
                                     group_by=input_txt['group'], 
@@ -662,11 +665,11 @@ def main():
     elif os.path.isfile(input_txt['path_to_data']):
         image_4D = {input_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
         files_list = [i for i in np.arange(len(image_4D))]
-        file_4D = os.path.basename(input_txt['path_to_data'])
-        file_4D = file_4D.split('_')[0]+'.tif'    
+        if file_4D == '':
+            file_4D = os.path.basename(input_txt['path_to_data'])
+            file_4D = file_4D.split('_')[0]+'.tif'    
     
-    if 'output_name' in input_txt.keys():
-        file_4D = input_txt['output_name']
+
     # print(type(image_4D), image_4D.keys(), type(image_4D[input_txt['ch_names'][-1]]), len(image_4D[input_txt['ch_names'][-1]]))
 
     ####### initial registration of images using phase_correlation on red channel, last channel
