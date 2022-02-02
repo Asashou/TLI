@@ -17,9 +17,9 @@ from skimage import io
 import skimage.transform as tr
 import psutil
 import gc
-from PIL import Image
+# from PIL import Image
 from scipy import ndimage, spatial, stats
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn import metrics
 from skimage.filters import gaussian, threshold_otsu
 from scipy import ndimage
