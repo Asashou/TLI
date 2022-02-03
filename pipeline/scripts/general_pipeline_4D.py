@@ -25,6 +25,8 @@ from sklearn import metrics
 from skimage.filters import gaussian, threshold_otsu
 from scipy import ndimage
 from tqdm import tqdm
+from timeit import default_timer as timer
+import operator
 # import Neurosetta # this is the package that Nik Drummond wrote, and it can replace some functions once implemented
 
 # functions
@@ -285,7 +287,7 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
         except:
             mask[i] = mask[i]
             mask_image[i] = mask_image[i]
-    mask = img_limits(mask, limit=255, ddtype='uint8')
+        mask[i] = img_limits(mask[i], limit=255, ddtype='uint8')
     if save == True:
         if save_file == '':
             save_name = save_path+'masked_image.tif'
@@ -435,6 +437,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                   check_ch='',                       
                   save=True, save_path='',save_file=''):
     """"""
+    start_time = timer()
     if isinstance(image, dict) == False:
         image = {ch_names[0]:image}
     scope = np.arange(0,ref_t)
@@ -473,10 +476,17 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
         shifted = None
     if save == True:
         for ch, img in image.items():
+            try:
+                img = img.numpy()
+            except:
+                print('img is alread an array')
+            if img.dtype != 'uint16':
+                img = img_limits(img, ddtype='uint16')
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)       
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel) 
+            print('ants_round run time', timer()-start_time)      
     return image, shifts
 
 def phase_corr(fixed, moving, sigma):
@@ -582,7 +592,7 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     """apply Clahe on image based on provided kernel_size and clipLimit
     if save is True, save predicted image with provided info"""
     if file != '':
-        image = imread(file)
+        image = tif.imread(file)
     if image.min()<0:
         image = (image - image.min())
     image = image.astype('uint16')
@@ -623,58 +633,88 @@ def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=Tru
         save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_4D
 
-def segment_3D(image, neu_no=10, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
     s = ndimage.generate_binary_structure(len(image.shape), len(image.shape))
     labeled_array, num_labels = ndimage.label(image, structure=s)
     labels = np.unique(labeled_array)
-    labels = np.delete(labels, 0)
+    labels = labels[labels!=0]
+    neu_sizes = {}
+    for l in labels:
+        neu_sizes[l] = (labeled_array == l).sum()
+    avg_size = np.mean(list(neu_sizes.values()))
+    print('average, min and max segments sizes', avg_size, np.min(list(neu_sizes.values())), np.max(list(neu_sizes.values())))
     if neu_no != 0 and num_labels > neu_no:
-        neu_sizes = {}
-        for l in labels:
-            neu_sizes[i] = (labeled_array == l).sum()
-        avg_size = np.mean(list(neu_sizes.values()))
-        final_array = labeled_array.copy()
         for ind, l in enumerate(labels):
             if neu_sizes[l] < avg_size:
+                print(neu_sizes[l])
                 labels[ind] = 0
-                final_array[final_array == l] = 0
-        labels = np.delete(labels, 0)
-        for ind, l in enumerate(labels):
-            labels[ind] = ind+1
-            final_array[final_array == l] = ind+1
-    tif.imsave('neurons_segmented.tif', final_array)
+        labels = labels[labels!=0]
+        print(num_labels, 'segments after first filtering', len(labels))
+        # neu_sizes = {}
+        # for l in labels:
+        #     neu_sizes[l] = (labeled_array == l).sum()
+        # avg_size = np.mean(list(neu_sizes.values()))
+        # print('average segments size after first filtering', avg_size)
+    if max_neu_no != 0 and len(labels) > max_neu_no:
+        sorted_sizes = sorted(neu_sizes.items(), key=operator.itemgetter(1), reverse=True)
+        sorted_sizes = sorted_sizes[0:max_neu_no]
+        labels = [[l][0][0] for l in sorted_sizes]
+        print('# segments after second filtering', len(labels))
+        # neu_sizes = {}
+        # for l in labels:
+        #     neu_sizes[l] = (labeled_array == l).sum()
+        # avg_size = np.mean(list(neu_sizes.values()))
+        # print('average segments size after second filtering', avg_size)
     neurons = {}
-    for l in labels:
-        neuron = final_array.copy()
+    for ind, l in enumerate(labels):
+        labels[ind] = ind
+        neuron = labeled_array.copy()
         neuron[neuron != l] = 0
-        neurons[l] = neuron
+        neuron[neuron == l] = ind
+        neuron = neuron.astype('uint8')
+        neurons[ind] = neuron
         if save == True:
             if save_file == '':
-                save_name = str(save_path+str(l)+'_neuron.tif')
+                save_name = str(save_path+str(ind)+'_neuron.tif')
             else:
-                save_name = str(save_path+'neuron_'+str(l)+'_'+save_file)
+                save_name = str(save_path+'neuron_'+str(ind)+'_'+save_file)
             if '.tif' not in save_name:
                 save_name +='.tif'
             save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel) 
+    del neurons[0]
+    print('segmented neurons labels', neurons.keys())
     return neurons
 
-def segment_4D(image_4D, neu_no=10, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
-    final_neurons = segment_3D(image_4D[0], neu_no=neu_no)
+def segment_4D(image_4D, neu_no=10, max_neu_no=75, xy_pixel=1, 
+                z_pixel=1, save=True, save_path='', save_file=''):
+    final_neurons = segment_3D(image_4D[0], neu_no=neu_no, save=True, save_path=save_path)
     final_neurons = {l:[arr] for l, arr in final_neurons.items()}
-    for img_3D in image_4D[1:]:
-        current_neurons = segment_3D(img_3D, neu_no=neu_no)
+    print('identified neurons in first timepoint', final_neurons.keys())
+    for ind, img_3D in enumerate(image_4D[1:]):
+        current_neurons = segment_3D(img_3D, neu_no=neu_no, save=True, save_path=save_path)
+        print('identified neurons in first timepoint', ind+1, final_neurons.keys())
         for l, neu_list in final_neurons.items():
             neu = neu_list[-1]
+            neu[neu != 0] = 1
             diff = np.prod(np.array(neu.shape))
             ID = 0
             for t, neu_1 in current_neurons.items():
-                cur_diff = abs(neu - neu_1)
-                if cur_diff < diff:
-                    diff = cur_diff
-                    ID = t
-            final_neurons[l].append(current_neurons[ID])
+                neu_1[neu_1 != 0] = 1
+                cur_diff = abs((neu - neu_1)).sum()
+                print('previous and current diffs for segment', t, diff,cur_diff)
+                if cur_diff != 0:
+                    if cur_diff < diff:
+                        diff = cur_diff
+                        ID = t
+            if ID != 0:
+                try:
+                    final_neurons[l].append(current_neurons[ID])
+                    print('segment', ID, 'in timepoint', ind+2,'was assigned to segment', l, 'in final image')
+                except:
+                    print("no similar neuron was found at timepoint", ind+2)
+        print('finished segmenting timepoint', ind+2)
         current_neurons = None
-    for l, image_4D in final_neurons.items:
+    for l, image_4D in final_neurons.items():
         image_4D = np.array(image_4D)
         if save == True:
             if save_file == '':
