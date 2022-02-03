@@ -1,5 +1,6 @@
 # We import all our dependencies.
 import argparse
+import enum
 import os
 from pickle import FALSE
 import cv2 as cv
@@ -102,7 +103,7 @@ def txt2dict(path):
     elif type(input_txt['steps']) == tuple:
         input_txt['steps'] = [s.lower() for s in input_txt['steps']]
     if 'all' in input_txt['steps']:
-        input_txt['steps'] = ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask']
+        input_txt['steps'] = ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
     if 'check_ch' not in input_txt['ch_names']:
         print('channel defined for similarity_check not recognized, so ch_0 used')
         input_txt['check_ch'] = input_txt['ch_names'][0]
@@ -132,7 +133,7 @@ def get_file_names(path, group_by='', order=True, nested_files=False, criteria='
 def img_limits(img, limit=0, ddtype='uint16'):
     max_limits = {'uint8': 255, 'uint16': 65530}
     print('image old limits', img.min(), img.max())
-    img = img - img.min()
+    img = img - img.min()        
     if limit == 0:
         limit = img.max()
     if limit > max_limits[ddtype]:
@@ -277,6 +278,7 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
     mask = image.copy()
     mask_image = image.copy()
     for i, img in enumerate(image):
+        print('calculating mask for stack#', i)
         try:
             mask[i] = mask_image(img, return_mask=True ,sig=sig)
             mask_image[i] = mask_image(img, return_mask=False ,sig=sig)
@@ -284,7 +286,6 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
             mask[i] = mask[i]
             mask_image[i] = mask_image[i]
     mask = img_limits(mask, limit=255, ddtype='uint8')
-    mask = img_limits(mask, limit=0, ddtype='uint16')
     if save == True:
         if save_file == '':
             save_name = save_path+'masked_image.tif'
@@ -297,20 +298,6 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
         save_image(mask_name, mask, xy_pixel=xy_pixel, z_pixel=z_pixel)
         save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return mask, mask_image
-
-def mask_4D(image_4D, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
-    for ind, stack in enumerate(image_4D):
-        image_4D[ind] = mask_3D(stack, sig=sig, save=False)
-    if save == True:
-        if save_file == '':
-            save_name = save_path+'mask_4D.tif'
-        else:
-            save_name = save_path+'mask_'+save_file
-        if '.tif' not in save_name:
-            save_name += '.tif'
-        # img_save = img_limits(mask, limit=255)
-        save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    return image_4D
 
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 reg_iterations=(40,20,0), 
@@ -410,7 +397,6 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
     shifted = image.copy()
-    print(shift['fwdtransforms'])
     for ch, img in shifted.items():
         shifted[ch]= antspy_drift(ref[ch],img,shift=shift['fwdtransforms'],check=False)
     if check_ch in image.keys():
@@ -422,11 +408,14 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
             image = shifted
         elif (pre_check - post_check) > 0.1:
             print('similarity_check was smaller after shift, so it was ignored:', pre_check, '>>', post_check)
+            for ch, img in image.items():
+                image[ch] = img.numpy()
     else:
         print(check_ch, 'not a recognized ch in image')
         image = shifted
     for ch, img in image.items():
-        image[ch] = img_limits(img)
+        if img.min() != 0:
+            image[ch] = img_limits(img)
         if save == True:
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
@@ -480,6 +469,8 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                                                 save=False)
         for ch in ch_names:
             image[ch][i] = shifted[ch] 
+        moving = None
+        shifted = None
     if save == True:
         for ch, img in image.items():
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
@@ -631,6 +622,70 @@ def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=Tru
             save_name +='.tif'
         save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_4D
+
+def segment_3D(image, neu_no=10, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+    s = ndimage.generate_binary_structure(len(image.shape), len(image.shape))
+    labeled_array, num_labels = ndimage.label(image, structure=s)
+    labels = np.unique(labeled_array)
+    labels = np.delete(labels, 0)
+    if neu_no != 0 and num_labels > neu_no:
+        neu_sizes = {}
+        for l in labels:
+            neu_sizes[i] = (labeled_array == l).sum()
+        avg_size = np.mean(list(neu_sizes.values()))
+        final_array = labeled_array.copy()
+        for ind, l in enumerate(labels):
+            if neu_sizes[l] < avg_size:
+                labels[ind] = 0
+                final_array[final_array == l] = 0
+        labels = np.delete(labels, 0)
+        for ind, l in enumerate(labels):
+            labels[ind] = ind+1
+            final_array[final_array == l] = ind+1
+    tif.imsave('neurons_segmented.tif', final_array)
+    neurons = {}
+    for l in labels:
+        neuron = final_array.copy()
+        neuron[neuron != l] = 0
+        neurons[l] = neuron
+        if save == True:
+            if save_file == '':
+                save_name = str(save_path+str(l)+'_neuron.tif')
+            else:
+                save_name = str(save_path+'neuron_'+str(l)+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name +='.tif'
+            save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel) 
+    return neurons
+
+def segment_4D(image_4D, neu_no=10, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+    final_neurons = segment_3D(image_4D[0], neu_no=neu_no)
+    final_neurons = {l:[arr] for l, arr in final_neurons.items()}
+    for img_3D in image_4D[1:]:
+        current_neurons = segment_3D(img_3D, neu_no=neu_no)
+        for l, neu_list in final_neurons.items():
+            neu = neu_list[-1]
+            diff = np.prod(np.array(neu.shape))
+            ID = 0
+            for t, neu_1 in current_neurons.items():
+                cur_diff = abs(neu - neu_1)
+                if cur_diff < diff:
+                    diff = cur_diff
+                    ID = t
+            final_neurons[l].append(current_neurons[ID])
+        current_neurons = None
+    for l, image_4D in final_neurons.items:
+        image_4D = np.array(image_4D)
+        if save == True:
+            if save_file == '':
+                save_name = str(save_path+str(l)+'_neuron.tif')
+            else:
+                save_name = str(save_path+'neuron_'+str(l)+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name +='.tif'
+            save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return final_neurons
+
 ######################
 
 def main():
@@ -644,7 +699,7 @@ def main():
     
     ####### compiling the single 3D tif files to 4D_image, or reading 4D_image(s)
     if 'output_name' in input_txt.keys():
-        file_4D = input_txt['output_name']
+        file_4D = str(input_txt['output_name'])
     else:    
         file_4D = input_txt['group'].split('_')[0]+'.tif'
     if os.path.isdir(input_txt['path_to_data']):
@@ -771,29 +826,43 @@ def main():
         csvfile.close()
 
     if 'n2v' in input_txt['steps']:
+        print('applying N2V on image    `')
         image_4D[input_txt['ch_names'][0]] = N2V_4D(image_4D[input_txt['ch_names'][0]],
                                                     model_name=input_txt['model_name'], 
                                                     model_path=input_txt['model_path'], 
                                                     save=True, save_path=input_txt['save_path'],
                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D) 
+        print('finished applying N2V')
     if 'clahe' in input_txt['steps']:
+        print('applying clahe on image')
         image_4D[input_txt['ch_names'][0]] = clahe_4D(image_4D[input_txt['ch_names'][0]],
                                                       kernel_size=input_txt['kernel_size'],
                                                       clipLimit=input_txt['clipLimit'], 
                                                       xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                       save=True, save_path=input_txt['save_path'], 
                                                       save_file=input_txt['ch_names'][0]+'_'+file_4D)
+        print('finished applying clahe')                                                      
     ##### masking 
     if 'mask' in input_txt['steps']:
-        mask, mask_image = mask_4D(image_4D[input_txt['ch_names'][0]], 
-                                    sig=2, save=True, 
-                                    save_path=input_txt['save_path'],
-                                    xy_pixel=input_txt['xy_pixel'], 
-                                    z_pixel=input_txt['z_pixel'],
-                                    save_file=input_txt['ch_names'][-1]+'_'+file_4D)
+        print('create image mask')
+        mask, image_4D[input_txt['ch_names'][0]] = mask_4D(image_4D[input_txt['ch_names'][0]], 
+                                                            sig=2, save=True, 
+                                                            save_path=input_txt['save_path'],
+                                                            xy_pixel=input_txt['xy_pixel'], 
+                                                            z_pixel=input_txt['z_pixel'],
+                                                            save_file=input_txt['ch_names'][0]+'_'+file_4D)
+        print('finished applying mask')
 
-
+    if 'segment' in input_txt['steps']:
+        print('segmenting neurons')
+        neurons = segment_4D(image_4D[input_txt['ch_names'][0]], 
+                            neu_no=10, save=True, 
+                            save_path=input_txt['save_path'],
+                            xy_pixel=input_txt['xy_pixel'], 
+                            z_pixel=input_txt['z_pixel'],
+                            save_file=input_txt['ch_names'][0]+'_'+file_4D)
+        print('finished segmenting neurons')
 
     # if 'ants' in input_txt['steps']:
     #     parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
