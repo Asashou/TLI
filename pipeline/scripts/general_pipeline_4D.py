@@ -681,7 +681,10 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
             if '.tif' not in save_name:
                 save_name +='.tif'
             save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel) 
-    del neurons[0]
+        if neuron.sum() == 0 or neuron.sum() == np.prod(np.array(neuron.shape)):
+            del neurons[ind]
+            print('this segment was removed because its empty')
+    # del neurons[0]
     print('segmented neurons labels', neurons.keys())
     return neurons
 
