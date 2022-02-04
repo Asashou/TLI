@@ -109,6 +109,19 @@ def txt2dict(path):
     if 'check_ch' not in input_txt['ch_names']:
         print('channel defined for similarity_check not recognized, so ch_0 used')
         input_txt['check_ch'] = input_txt['ch_names'][0]
+    parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
+                'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
+                'syn_sampling':32, 'reg_iterations':(40,20,0), 
+                'aff_iterations':(2100,1200,1200,10), 
+                'aff_shrink_factors':(6,4,2,1), 
+                'aff_smoothing_sigmas':(3,2,1,0)}
+    for para in parameters.keys:
+        if para in input_txt.keys:
+            pass
+        else:
+            input_txt[para] = parameters[para]
+    if 'ants_ref_st' not in input_txt.keys():
+        input_txt['ants_ref_st'] = 0    
     print(input_txt)
     return input_txt
 
@@ -407,17 +420,20 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
         post_check = check_similarity(check_ref, shifted[check_ch])
         if (pre_check - post_check) <= 0.1:
             print('similarity_check', pre_check, 'improved to', post_check)
-            image = shifted
-        elif (pre_check - post_check) > 0.1:
+            image = shifted.copy()
+        else:
             print('similarity_check was smaller after shift, so it was ignored:', pre_check, '>>', post_check)
             for ch, img in image.items():
                 image[ch] = img.numpy()
     else:
         print(check_ch, 'not a recognized ch in image')
-        image = shifted
+        image = shifted.copy()
+    shifted = None
+    print(type(image),type(image[ch_names[0]]))
     for ch, img in image.items():
         if img.min() != 0:
             image[ch] = img_limits(img)
+        print(img.min(), img.max())        
         if save == True:
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
@@ -434,7 +450,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                   aff_smoothing_sigmas=(3,2,1,0),
                   grad_step=0.2, flow_sigma=3, total_sigma=0,
                   aff_sampling=32, syn_sampling=3,  
-                  check_ch='',                       
+                  check_ch='', save_shifts=True,                       
                   save=True, save_path='',save_file=''):
     """"""
     start_time = timer()
@@ -471,23 +487,39 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                                                 check_ch=check_ch,                       
                                                 save=False)
         for ch in ch_names:
-            image[ch][i] = shifted[ch] 
+            image[ch][i] = shifted[ch].copy()
+            print(type(image[ch][i]), type(shifted[ch])) 
         moving = None
         shifted = None
+    for ch, img in image.items():
+        try:
+            img = img.numpy()
+            print('image was ants object and is now converted to array')
+        except:
+            print('img is alread an array')
+        if img.dtype != 'uint16':
+            for ind, stack in enumerate(img):
+                img[ind] = img_limits(stack, ddtype='uint16')
+    print(type(image[ch_names[0]]))
     if save == True:
         for ch, img in image.items():
-            try:
-                img = img.numpy()
-            except:
-                print('img is alread an array')
-            if img.dtype != 'uint16':
-                for ind, stack in enumerate(img):
-                    img[ind] = img_limits(stack, ddtype='uint16')
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel) 
+            try: 
+                save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel) 
+            except:
+                print(type(img), img.dtype)
     print('ants_round run time', timer()-start_time)      
+    if save_shifts == True:
+        shift_file = save_path+'AntsPy_'+drift_corr+"_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'shift_mat']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, shift in shifts.items():
+                writer.writerow({'timepoint' : timepoint+1, 'shift_mat' : shift})
+        csvfile.close()    
     return image, shifts
 
 def phase_corr(fixed, moving, sigma):
@@ -634,16 +666,23 @@ def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=Tru
         save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_4D
 
-def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
     s = ndimage.generate_binary_structure(len(image.shape), len(image.shape))
     labeled_array, num_labels = ndimage.label(image, structure=s)
     labels = np.unique(labeled_array)
     labels = labels[labels!=0]
     neu_sizes = {}
     for l in labels:
-        neu_sizes[l] = (labeled_array == l).sum()
+        neu_sizes[l] = (labeled_array == l).sum()/(labeled_array == l).max()
+        print(l, (labeled_array == l).max())
     avg_size = np.mean(list(neu_sizes.values()))
-    print('average, min and max segments sizes', avg_size, np.min(list(neu_sizes.values())), np.max(list(neu_sizes.values())))
+    # print('average, min and max segments sizes', avg_size, np.min(list(neu_sizes.values())), np.max(list(neu_sizes.values())))
+    if min_size != 0:
+        for ind, l in enumerate(labels):
+            if neu_sizes[l] < min_size:
+                print(neu_sizes[l])
+                labels[ind] = 0
+        labels = labels[labels!=0]
     if neu_no != 0 and num_labels > neu_no:
         for ind, l in enumerate(labels):
             if neu_sizes[l] < avg_size:
@@ -651,21 +690,12 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
                 labels[ind] = 0
         labels = labels[labels!=0]
         print('segments after first filtering', len(labels))
-        # neu_sizes = {}
-        # for l in labels:
-        #     neu_sizes[l] = (labeled_array == l).sum()
-        # avg_size = np.mean(list(neu_sizes.values()))
-        # print('average segments size after first filtering', avg_size)
     if max_neu_no != 0 and len(labels) > max_neu_no:
         sorted_sizes = sorted(neu_sizes.items(), key=operator.itemgetter(1), reverse=True)
         sorted_sizes = sorted_sizes[0:max_neu_no]
         labels = [[l][0][0] for l in sorted_sizes]
         print('# segments after second filtering', len(labels))
-        # neu_sizes = {}
-        # for l in labels:
-        #     neu_sizes[l] = (labeled_array == l).sum()
-        # avg_size = np.mean(list(neu_sizes.values()))
-        # print('average segments size after second filtering', avg_size)
+    print('segments after first filtering', len(labels))
     neurons = {}
     for ind, l in enumerate(labels):
         labels[ind] = ind+1
@@ -686,8 +716,6 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
             if '.tif' not in save_name:
                 save_name +='.tif'
             save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel)             
-    # del neurons[0]
-    # print('segmented neurons labels', neurons.keys())
     return neurons
 
 def segment_4D(image_4D, neu_no=10, max_neu_no=30, xy_pixel=1, 
@@ -701,25 +729,25 @@ def segment_4D(image_4D, neu_no=10, max_neu_no=30, xy_pixel=1,
         print('identified neurons in first timepoint', ind+1, final_neurons.keys())
         for l, neu_list in final_neurons.items():
             neu = neu_list[-1]
-            neu[neu != 0] = 1
-            neu_size = neu.sum()
+            # neu[neu != 0] = 1
+            neu_size = neu.sum() / neu.max()
             print('size of segment %i in previous timepoint' %neu_size)
             diff = np.prod(np.array(neu.shape))
             ID = 0
             for t, neu_1 in current_neurons.items():
-                neu_1[neu_1 != 0] = 1
-                neu1_size = neu_1.sum()
+                # neu_1[neu_1 != 0] = 1
+                neu1_size = neu_1.sum() / neu_1.max()
                 print('size of segment %i in current timepoint' %neu1_size)
                 size_dif = abs(neu1_size - neu_size)
-                if size_dif/neu_size > 0.5:
-                    print('segment %i in current timepoint will be based due to big size diff' %t)
-                else:
-                    cur_diff = abs((neu - neu_1)).sum()
-                    print('previous and current diffs for segment', t, diff,cur_diff)
-                    if cur_diff != 0:
-                        if cur_diff < diff:
-                            diff = cur_diff
-                            ID = t
+                # if size_dif/neu_size > 0.5:
+                #     print('segment %i in current timepoint will be based due to big size diff' %t)
+                # else:
+                cur_diff = abs((neu - neu_1)).sum()
+                print('previous and current diffs for segment', t, diff,cur_diff)
+                if cur_diff != 0:
+                    if cur_diff < diff:
+                        diff = cur_diff
+                        ID = t
             if ID != 0:
                 try:
                     final_neurons[l].append(current_neurons[ID])
@@ -808,19 +836,6 @@ def main():
 
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
-        parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
-                      'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
-                      'syn_sampling':32, 'reg_iterations':(40,20,0), 
-                      'aff_iterations':(2100,1200,1200,10), 
-                      'aff_shrink_factors':(6,4,2,1), 
-                      'aff_smoothing_sigmas':(3,2,1,0)}
-        for para in parameters.keys():
-            try:
-                parameters[para] = input_txt[para]
-            except:
-                pass
-        if 'ants_ref_st' not in input_txt.keys():
-            input_txt['ants_ref_st'] = 0
         ref_t = input_txt['ants_ref_st']
         if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
             ref_t = 0
@@ -841,30 +856,30 @@ def main():
                                                             ref_t=ref_t,
                                                             ref_ch=-1, 
                                                             metric=metric_t,
-                                                            reg_iterations=parameters['reg_iterations'], 
-                                                            aff_iterations=parameters['aff_iterations'], 
-                                                            aff_shrink_factors=parameters['aff_shrink_factors'], 
-                                                            aff_smoothing_sigmas=parameters['aff_smoothing_sigmas'],
-                                                            grad_step=parameters['grad_step'], 
-                                                            flow_sigma=parameters['flow_sigma'], 
-                                                            total_sigma=parameters['total_sigma'],
-                                                            aff_sampling=parameters['aff_sampling'], 
-                                                            syn_sampling=parameters['syn_sampling'], 
+                                                            reg_iterations=input_txt['reg_iterations'], 
+                                                            aff_iterations=input_txt['aff_iterations'], 
+                                                            aff_shrink_factors=input_txt['aff_shrink_factors'], 
+                                                            aff_smoothing_sigmas=input_txt['aff_smoothing_sigmas'],
+                                                            grad_step=input_txt['grad_step'], 
+                                                            flow_sigma=input_txt['flow_sigma'], 
+                                                            total_sigma=input_txt['total_sigma'],
+                                                            aff_sampling=input_txt['aff_sampling'], 
+                                                            syn_sampling=input_txt['syn_sampling'], 
                                                             check_ch=input_txt['ch_names'][0],                       
                                                             save=True, 
                                                             save_path=input_txt['save_path'],
                                                             save_file=str(i+1)+'_'+file_4D)
             print('finished ants run with', drift_t)
         ###### saving shifts mats as csv
-        shift_file = input_txt['save_path']+"ants_shifts.csv"
-        with open(shift_file, 'w', newline='') as csvfile:
-            fieldnames = ['reg_step', 'timepoint', 'ants_shift']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for reg_step, shifts in ants_shifts.items():
-                for timepoint, ind_shift in shifts.items():
-                    writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
-        csvfile.close()  
+        # shift_file = input_txt['save_path']+"ants_shifts.csv"
+        # with open(shift_file, 'w', newline='') as csvfile:
+        #     fieldnames = ['reg_step', 'timepoint', 'ants_shift']
+        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        #     writer.writeheader()
+        #     for reg_step, shifts in ants_shifts.items():
+        #         for timepoint, ind_shift in shifts.items():
+        #             writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
+        # csvfile.close()  
         ###### doing final similarity check after antspy, and saving values
         similairties = {}
         for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
