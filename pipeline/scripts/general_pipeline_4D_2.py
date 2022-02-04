@@ -333,7 +333,6 @@ def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 aff_smoothing_sigmas=(3,2,1,0),
                 grad_step=0.2, flow_sigma=3, total_sigma=0,
                 aff_sampling=32, syn_sampling=32):
-
     """claculate drift of image from ref using Antspy with provided drift_corr"""
     try:
         fixed= ants.from_numpy(np.float32(fixed))
@@ -354,13 +353,11 @@ def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                               aff_sampling=aff_sampling, syn_sampling=syn_sampling)
     print(shift['fwdtransforms'])
     return shift
-
 def check_similarity(ref, image):
     check = sum(metrics.pairwise.cosine_similarity(image.ravel().reshape(1,-1), 
                            ref.ravel().reshape(1,-1)))[0]
     # print('check_similarity of image to ref is', check)
     return check
-
 def antspy_drift(fixed, moving, shift, check=True):
     if check == True:
         try:
@@ -390,7 +387,6 @@ def antspy_drift(fixed, moving, shift, check=True):
             vol_shifted = moving.numpy()
             print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
     return vol_shifted
-
 def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1, 
                         z_pixel=1, ch_names=[''], ref_ch=-1,
                         metric='mattes',
@@ -424,6 +420,7 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
     shifted = image.copy()
+    print(shift['fwdtransforms'])
     for ch, img in shifted.items():
         shifted[ch]= antspy_drift(ref[ch],img,shift=shift['fwdtransforms'],check=False)
     if check_ch in image.keys():
@@ -433,7 +430,7 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
         if (pre_check - post_check) <= 0.1:
             print('similarity_check', pre_check, 'improved to', post_check)
             image = shifted.copy()
-        else:
+        elif (pre_check - post_check) > 0.1:
             print('similarity_check was smaller after shift, so it was ignored:', pre_check, '>>', post_check)
             for ch, img in image.items():
                 image[ch] = img.numpy()
@@ -441,18 +438,15 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
         print(check_ch, 'not a recognized ch in image')
         image = shifted.copy()
     shifted = None
-    print(type(image),type(image[ch_names[0]]))
     for ch, img in image.items():
-        if img.min() != 0:
-            image[ch] = img_limits(img)
-        print(img.min(), img.max())        
+        print(ch, type(image))
+        # image[ch] = img_limits(img)
         if save == True:
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
             save_image(save_name, image[ch], xy_pixel=xy_pixel, z_pixel=z_pixel)       
     return image, shift
-
 def apply_ants_4D(image, drift_corr,  xy_pixel=1, 
                   z_pixel=1, ch_names=[1], ref_t=0,
                   ref_ch=-1, metric='mattes',
@@ -462,7 +456,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                   aff_smoothing_sigmas=(3,2,1,0),
                   grad_step=0.2, flow_sigma=3, total_sigma=0,
                   aff_sampling=32, syn_sampling=3,  
-                  check_ch='', save_shifts=True,                       
+                  check_ch='',                       
                   save=True, save_path='',save_file=''):
     """"""
     start_time = timer()
@@ -499,40 +493,86 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                                                 check_ch=check_ch,                       
                                                 save=False)
         for ch in ch_names:
-            image[ch][i] = shifted[ch].copy()
-            print(type(image[ch][i]), type(shifted[ch])) 
-        moving = None
+            image[ch][i] = shifted[ch] 
+            print('image type after ants', type(image[ch][i]))
+            try:
+                image[ch][i] = image[ch][i].numpy()
+            except:
+                pass
+            image[ch][i] = image[ch][i].astype('uint16')
         shifted = None
-    for ch, img in image.items():
-        try:
-            img = img.numpy()
-            print('image was ants object and is now converted to array')
-        except:
-            print('img is alread an array')
-        if img.dtype != 'uint16':
-            for ind, stack in enumerate(img):
-                img[ind] = img_limits(stack, ddtype='uint16')
-    print(type(image[ch_names[0]]))
     if save == True:
         for ch, img in image.items():
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
-            try: 
-                save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel) 
-            except:
-                print(type(img), img.dtype)
-    print('ants_round runtime', timer()-start_time)      
+            print('image before saving', type(image[ch][i]))
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)       
+    print('finished applying ants', timer()-start_time)
+    return image, shifts
+
+def phase_corr(fixed, moving, sigma):
+    if fixed.shape > moving.shape:
+        print('fixed image is larger than moving', fixed.shape, moving.shape)
+        fixed = fixed[tuple(map(slice, moving.shape))]
+        print('fixed image resized to', fixed.shape)
+    elif fixed.shape < moving.shape:
+        print('fixed image is smaller than moving', fixed.shape, moving.shape)
+        moving = moving[tuple(map(slice, fixed.shape))]
+        print('moving image resized to', moving.shape)
+    fixed = gf(fixed, sigma=sigma)
+    moving = gf(moving, sigma=sigma)
+    print('applying phase correlation')
+    try:
+        for i in [0]:
+            shift, error, diffphase = corr(fixed, moving)
+    except:
+        for i in [0]:
+            shift, error, diffphase = np.zeros(len(moving)), 0, 0
+            print("couldn't perform PhaseCorr, so shift was casted as zeros")
+    return shift
+def phase_corr_4D(image, sigma, xy_pixel=1, 
+                  z_pixel=1, ch_names=[1], 
+                  ref_ch=-1,                      
+                  save=True, save_path='',
+                  save_file='', save_shifts=True):
+    if isinstance(image, dict) == False:
+        image = {ch_names[0]:image}
+    pre_shifts = {}
+    if len(ch_names) == 1:
+        ref_ch = ch_names[0]
+    else:
+        try:
+            ref_ch = ch_names[ref_ch]
+        except:
+            ref_ch = ch_names[-1]
+    ref_im = image[ref_ch]
+    current_shift = [0 for i in ref_im[0].shape]
+    print('initial shift of 0', current_shift)
+    print(len(ref_im[1:]), ref_im[1].shape)
+    for ind, stack in enumerate(ref_im[1:]):
+        pre_shifts[ind+1] = phase_corr(ref_im[ind], stack, sigma) 
+        current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
+        print(pre_shifts[ind+1], current_shift)
+        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
+        for ch, img in image.items(): 
+            image[ch][ind] = ndimage.shift(img[ind], current_shift) 
+    if save == True:
+        for ch, img in image.items():
+            save_name = str(save_path+'PhaseCorr_'+ch+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name += '.tif'
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)   
     if save_shifts == True:
-        shift_file = save_path+'AntsPy_'+drift_corr+"_shifts.csv"
+        shift_file = save_path+"PhaseCorr_shifts.csv"
         with open(shift_file, 'w', newline='') as csvfile:
-            fieldnames = ['timepoint', 'shift_mat']
+            fieldnames = ['timepoint', 'phase_shift']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for timepoint, shift in shifts.items():
-                writer.writerow({'timepoint' : timepoint+1, 'shift_mat' : shift})
-        csvfile.close()    
-    return image, shifts
+            for timepoint, shift in pre_shifts.items():
+                writer.writerow({'timepoint' : timepoint+1, 'phase_shift' : shift})
+        csvfile.close()
+    return image, pre_shifts
 
 def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
@@ -845,7 +885,7 @@ def main():
         if file_4D == '':
             file_4D = os.path.basename(input_txt['path_to_data'])
             file_4D = file_4D.split('_')[0]+'.tif'    
-    print('finished reading and compiling images', timer()-start_time)
+    print('finished compiling images', timer()-start_time)
 
     ####### initial registration of images using phase_correlation on red channel, last channel
     if 'preshift' in input_txt['steps']:
@@ -858,7 +898,7 @@ def main():
                                             ref_ch=-1, save=True, 
                                             save_path=input_txt['save_path'],
                                             save_file=file_4D, save_shifts=True)
-        print('finished applying preshift', timer()-start_time)
+    print('finished applying preshift', timer()-start_time)
 
     ###### optional deletion of last quater of slices in Z_dim of each 3D image
     #### this is to reduce the run time for Ants a little bit
@@ -874,6 +914,7 @@ def main():
 
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
+        print('started ants')
         start_time = timer()
         ref_t = input_txt['ants_ref_st']
         if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
@@ -908,7 +949,7 @@ def main():
                                                             save=True, 
                                                             save_path=input_txt['save_path'],
                                                             save_file=str(i+1)+'_'+file_4D)
-            print('finished ants run with', drift_t)
+            print('finished ants run with', drift_t, timer()-start_time)
         ###### saving shifts mats as csv
         # shift_file = input_txt['save_path']+"ants_shifts.csv"
         # with open(shift_file, 'w', newline='') as csvfile:
@@ -923,16 +964,16 @@ def main():
         similairties = {}
         for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
             img_t = image_4D[input_txt['ch_names'][0]][t]
-            similairties[t+1] = check_similarity(img_t, img)
+            similairties[t+2] = check_similarity(img_t, img)
         checks_file = input_txt['save_path']+"similarity_check.csv"
         with open(checks_file, 'w', newline='') as csvfile:
-            fieldnames = ['reg_step', 'file', 'similarity_check']
+            fieldnames = ['timepoint', 'similarity_check']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for reg_step, checks in similarity_check.items():
-                for file, similarity_check in checks.items():
-                    writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
-        csvfile.close()
+            for timepoint, check in similairties.items():
+        #         for file, similarity_check in checks.items():
+                writer.writerow({'timepoint': timepoint, 'similarity_check' : check})
+        # csvfile.close()
         print('finished antspy registration', timer()-start_time)
 
 
