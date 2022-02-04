@@ -7,8 +7,8 @@ path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211114/
 save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/211114/regi12/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
-### name of output tif files
-output_name: 211114
+### basename of output tiff files
+output_name: 211104_brain1.2_LP40_P36.tif
 
 ### data filtering parameters: name(group), channel names,subset
 group: 211114_brain3.2_LP40_P36_0
@@ -16,7 +16,8 @@ ch_names: GFP, Red  ## if the images has one channel then also specify here (e.g
 reg_subset: 20,60,450,750,425,750  ##Z,Y,X slicing. In case no subset required, type 0,0
 
 ### preprocessing steps to apply
-steps: all # all means prshift,ants,postshift,n2v,clahe
+steps: compile, mask, segment 
+#all means ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
 
 ### rotation and image_flip (not implemented yet)
 angle: 6
