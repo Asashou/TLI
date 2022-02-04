@@ -481,12 +481,13 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
             except:
                 print('img is alread an array')
             if img.dtype != 'uint16':
-                img = img_limits(img, ddtype='uint16')
+                for ind, stack in enumerate(img):
+                    img[ind] = img_limits(stack, ddtype='uint16')
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
             save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel) 
-            print('ants_round run time', timer()-start_time)      
+    print('ants_round run time', timer()-start_time)      
     return image, shifts
 
 def phase_corr(fixed, moving, sigma):
@@ -691,6 +692,7 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
 
 def segment_4D(image_4D, neu_no=10, max_neu_no=30, xy_pixel=1, 
                 z_pixel=1, save=True, save_path='', save_file=''):
+    start_time = timer()
     final_neurons = segment_3D(image_4D[0], neu_no=neu_no, save=True, save_path=save_path)
     final_neurons = {l:[arr] for l, arr in final_neurons.items()}
     print('identified neurons in first timepoint', final_neurons.keys())
@@ -736,6 +738,7 @@ def segment_4D(image_4D, neu_no=10, max_neu_no=30, xy_pixel=1,
             if '.tif' not in save_name:
                 save_name +='.tif'
             save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    print('ants_round run time', timer()-start_time)
     return final_neurons
 
 ######################
