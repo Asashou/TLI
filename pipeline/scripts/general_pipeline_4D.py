@@ -710,7 +710,7 @@ def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pix
         sorted_sizes = sorted_sizes[0:max_neu_no]
         labels = [[l][0][0] for l in sorted_sizes]
         print('# segments after second filtering', len(labels))
-    print('segments after first filtering', len(labels))
+    # print('segments after first filtering', len(labels))
     neurons = {}
     for ind, l in enumerate(labels):
         labels[ind] = ind+1
@@ -718,7 +718,7 @@ def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pix
         neuron[neuron != l] = 0
         neuron[neuron == l] = ind+1
         neuron = neuron.astype('uint8')
-        print('values and size of neuron:', neuron.min(), neuron.max(), neuron.sum()/(ind+1))
+        # print('values and size of neuron:', neuron.min(), neuron.max(), neuron.sum()/(ind+1))
         if neuron.sum() != 0 and neuron.sum() < np.prod(np.array(neuron.shape)):
             neurons[ind+1] = neuron
         else:
