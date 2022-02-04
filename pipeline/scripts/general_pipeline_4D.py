@@ -309,8 +309,8 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
     for i, img in enumerate(image):
         print('calculating mask for stack#', i)
         try:
-            mask[i] = mask_image(img, return_mask=True ,sig=sig)
-            mask_image[i] = mask_image(img, return_mask=False ,sig=sig)
+            mask[i] = mask_image(img, return_mask=False ,sig=sig)
+            mask_image[i] = mask_image(img, return_mask=True ,sig=sig)
         except:
             mask[i] = mask[i]
             mask_image[i] = mask_image[i]
