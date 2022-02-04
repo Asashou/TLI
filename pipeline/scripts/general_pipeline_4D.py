@@ -649,7 +649,7 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
                 print(neu_sizes[l])
                 labels[ind] = 0
         labels = labels[labels!=0]
-        print(num_labels, 'segments after first filtering', len(labels))
+        print('segments after first filtering', len(labels))
         # neu_sizes = {}
         # for l in labels:
         #     neu_sizes[l] = (labeled_array == l).sum()
@@ -667,12 +667,16 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
         # print('average segments size after second filtering', avg_size)
     neurons = {}
     for ind, l in enumerate(labels):
-        labels[ind] = ind
+        labels[ind] = ind+1
         neuron = labeled_array.copy()
         neuron[neuron != l] = 0
-        neuron[neuron == l] = ind
+        neuron[neuron == l] = ind+1
         neuron = neuron.astype('uint8')
-        neurons[ind] = neuron
+        print('values and size of neuron:', neuron.min(), neuron.max(), neuron.sum()/(ind+1))
+        if neuron.sum() != 0 and neuron.sum() < np.prod(np.array(neuron.shape)):
+            neurons[ind+1] = neuron
+        else:
+            print('this segment was removed because its empty')
         if save == True:
             if save_file == '':
                 save_name = str(save_path+str(ind)+'_neuron.tif')
@@ -680,15 +684,12 @@ def segment_3D(image, neu_no=10, max_neu_no=30, xy_pixel=1, z_pixel=1, save=True
                 save_name = str(save_path+'neuron_'+str(ind)+'_'+save_file)
             if '.tif' not in save_name:
                 save_name +='.tif'
-            save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel) 
-        if neuron.sum() == 0 or neuron.sum() == np.prod(np.array(neuron.shape)):
-            del neurons[ind]
-            print('this segment was removed because its empty')
+            save_image(save_name, neuron, xy_pixel=xy_pixel, z_pixel=z_pixel)             
     # del neurons[0]
-    print('segmented neurons labels', neurons.keys())
+    # print('segmented neurons labels', neurons.keys())
     return neurons
 
-def segment_4D(image_4D, neu_no=10, max_neu_no=75, xy_pixel=1, 
+def segment_4D(image_4D, neu_no=10, max_neu_no=30, xy_pixel=1, 
                 z_pixel=1, save=True, save_path='', save_file=''):
     final_neurons = segment_3D(image_4D[0], neu_no=neu_no, save=True, save_path=save_path)
     final_neurons = {l:[arr] for l, arr in final_neurons.items()}
@@ -699,16 +700,24 @@ def segment_4D(image_4D, neu_no=10, max_neu_no=75, xy_pixel=1,
         for l, neu_list in final_neurons.items():
             neu = neu_list[-1]
             neu[neu != 0] = 1
+            neu_size = neu.sum()
+            print('size of segment %i in previous timepoint' %neu_size)
             diff = np.prod(np.array(neu.shape))
             ID = 0
             for t, neu_1 in current_neurons.items():
                 neu_1[neu_1 != 0] = 1
-                cur_diff = abs((neu - neu_1)).sum()
-                print('previous and current diffs for segment', t, diff,cur_diff)
-                if cur_diff != 0:
-                    if cur_diff < diff:
-                        diff = cur_diff
-                        ID = t
+                neu1_size = neu_1.sum()
+                print('size of segment %i in current timepoint' %neu1_size)
+                size_dif = abs(neu1_size - neu_size)
+                if size_dif/neu_size > 0.5:
+                    print('segment %i in current timepoint will be based due to big size diff' %t)
+                else:
+                    cur_diff = abs((neu - neu_1)).sum()
+                    print('previous and current diffs for segment', t, diff,cur_diff)
+                    if cur_diff != 0:
+                        if cur_diff < diff:
+                            diff = cur_diff
+                            ID = t
             if ID != 0:
                 try:
                     final_neurons[l].append(current_neurons[ID])
