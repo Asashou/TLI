@@ -1,33 +1,33 @@
 # We import all our dependencies.
 import argparse
-import enum
+import enum #I don't remember why I have this package
 import os
-from pickle import FALSE
+from pickle import FALSE #I don't remember why I have this package
+import time #I don't remember why I have this package
 import cv2 as cv
 import numpy as np 
 import tifffile as tif
 from detect_delimiter import detect
 from n2v.models import N2V
 import ants
-from skimage import filters
 from skimage.registration import phase_cross_correlation as corr
 from scipy import ndimage
 from scipy.ndimage import gaussian_filter as gf
 import csv
 from skimage import io
-import skimage.transform as tr
+import skimage.transform as tr #I don't remember why I have this package
 import psutil
 import gc
-# from PIL import Image
 from scipy import ndimage, spatial, stats
-# import matplotlib.pyplot as plt
 from sklearn import metrics
-from skimage.filters import gaussian, threshold_otsu
+from skimage.filters import gaussian, threshold_otsu, median
 from scipy import ndimage
 from tqdm import tqdm
 from timeit import default_timer as timer
 import operator
 # import Neurosetta # this is the package that Nik Drummond wrote, and it can replace some functions once implemented
+# import matplotlib.pyplot as plt
+# from PIL import Image
 
 # functions
 def mem_use():
@@ -173,7 +173,7 @@ def split_convert(image, ch_names):
         for ind, ch in enumerate(ch_names):
             image_ch[ch] = image[ind::len(ch_names)]
         # if len(ch_names) > 1:
-        #     image_ch[ch_names[-1]] = filters.median(image_ch[ch_names[-1]])
+        #     image_ch[ch_names[-1]] = median(image_ch[ch_names[-1]])
         for ch, img in image_ch.items():
             image_ch[ch] = img_limits(img, limit=0)
         print('split_convert runtime', timer()-start_time)
@@ -262,72 +262,69 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
     tif.imwrite(name, image, imagej=True, dtype=image.dtype, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
 
-def mask_image(volume, return_mask = False ,sig = 2):
-    """
-    Create a binary mask from a 2 or 3-dimensional np.array.
-    Method normalizes the image, converts it to greyscale, then applies gaussian bluring (kernel width set to 2 by default, can be changed with sig parameter).
-    This is followed by thresholding the image using the isodata method and returning a binary mask. 
-    Parameters
-    ----------
-    image           np.array
-                    np.array of an image (2 or 3D)
-    return_mask     bool
-                    If False (default), the mask is subtracted from the original image. If True, a boolian array is returned, of the shape of the original image, as a mask. 
-    sig             Int
-                    kernel width for gaussian smoothing. set to 2 by default.
-    Returns
-    -------
-    mask            np.array
-                    Returns a binary np.array of equal shape to the original image, labeling the masked area.
-    """
-    for i in tqdm(1, desc = '3D_mask'):
-        start_time = timer()
-        image = volume.copy()
-        # if input image is 2D...
-        image = image.astype('float32')
-        # normalize to the range 0-1
-        image -= image.min()
-        image /= image.max()
-        # blur and grayscale before thresholding
-        blur = gaussian(image, sigma=sig)
-        # perform adaptive thresholding
-        t = threshold_otsu(blur.ravel())
-        mask = blur > t
-        # convert to bool
-        mask = np.array(mask, dtype=bool)
-        print('mask_image runtime', timer()-start_time)
-    if return_mask == False:
-        image[mask==False] = 0
-        return image
-    else:
-        return mask
+def phase_corr(fixed, moving, sigma):
+    if fixed.shape > moving.shape:
+        print('fixed image is larger than moving', fixed.shape, moving.shape)
+        fixed = fixed[tuple(map(slice, moving.shape))]
+        print('fixed image resized to', fixed.shape)
+    elif fixed.shape < moving.shape:
+        print('fixed image is smaller than moving', fixed.shape, moving.shape)
+        moving = moving[tuple(map(slice, fixed.shape))]
+        print('moving image resized to', moving.shape)
+    fixed = gf(fixed, sigma=sigma)
+    moving = gf(moving, sigma=sigma)
+    print('applying phase correlation')
+    try:
+        for i in [0]:
+            shift, error, diffphase = corr(fixed, moving)
+    except:
+        for i in [0]:
+            shift, error, diffphase = np.zeros(len(moving)), 0, 0
+            print("couldn't perform PhaseCorr, so shift was casted as zeros")
+    return shift
 
-def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
-    start_time = timer()
-    mask = image.copy()
-    mask_image = image.copy()
-    for i, img in enumerate(image):
-        print('calculating mask for stack#', i)
+def phase_corr_4D(image, sigma, xy_pixel=1, 
+                  z_pixel=1, ch_names=[1], 
+                  ref_ch=-1,                      
+                  save=True, save_path='',
+                  save_file='', save_shifts=True):
+    if isinstance(image, dict) == False:
+        image = {ch_names[0]:image}
+    pre_shifts = {}
+    if len(ch_names) == 1:
+        ref_ch = ch_names[0]
+    else:
         try:
-            mask[i] = mask_image(img, return_mask=False ,sig=sig)
-            mask_image[i] = mask_image(img, return_mask=True ,sig=sig)
+            ref_ch = ch_names[ref_ch]
         except:
-            mask[i] = mask[i]
-            mask_image[i] = mask_image[i]
-        mask[i] = img_limits(mask[i], limit=255, ddtype='uint8')
+            ref_ch = ch_names[-1]
+    ref_im = image[ref_ch]
+    current_shift = [0 for i in ref_im[0].shape]
+    print('initial shift of 0', current_shift)
+    print(len(ref_im[1:]), ref_im[1].shape)
+    for ind, stack in enumerate(ref_im[1:]):
+        pre_shifts[ind+1] = phase_corr(ref_im[ind], stack, sigma) 
+        current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
+        print(pre_shifts[ind+1], current_shift)
+        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
+        for ch, img in image.items(): 
+            image[ch][ind] = ndimage.shift(img[ind], current_shift) 
     if save == True:
-        if save_file == '':
-            save_name = save_path+'masked_image.tif'
-            mask_name = save_path+'mask.tif'
-        else:
-            mask_name = save_path+'mask_'+save_file
-            save_name = save_path+'image_mask_'+save_file
-        if '.tif' not in save_name:
-            save_name += '.tif'
-        save_image(mask_name, mask, xy_pixel=xy_pixel, z_pixel=z_pixel)
-        save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    print('mask_4D runtime', timer()-start_time)
-    return mask, mask_image
+        for ch, img in image.items():
+            save_name = str(save_path+'PhaseCorr_'+ch+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name += '.tif'
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)   
+    if save_shifts == True:
+        shift_file = save_path+"PhaseCorr_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'phase_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, shift in pre_shifts.items():
+                writer.writerow({'timepoint' : timepoint+1, 'phase_shift' : shift})
+        csvfile.close()
+    return image, pre_shifts
 
 def antspy_regi(fixed, moving, drift_corr, metric='mattes',
                 reg_iterations=(40,20,0), 
@@ -537,70 +534,6 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
         csvfile.close()    
     return image, shifts
 
-def phase_corr(fixed, moving, sigma):
-    if fixed.shape > moving.shape:
-        print('fixed image is larger than moving', fixed.shape, moving.shape)
-        fixed = fixed[tuple(map(slice, moving.shape))]
-        print('fixed image resized to', fixed.shape)
-    elif fixed.shape < moving.shape:
-        print('fixed image is smaller than moving', fixed.shape, moving.shape)
-        moving = moving[tuple(map(slice, fixed.shape))]
-        print('moving image resized to', moving.shape)
-    fixed = gf(fixed, sigma=sigma)
-    moving = gf(moving, sigma=sigma)
-    print('applying phase correlation')
-    try:
-        for i in [0]:
-            shift, error, diffphase = corr(fixed, moving)
-    except:
-        for i in [0]:
-            shift, error, diffphase = np.zeros(len(moving)), 0, 0
-            print("couldn't perform PhaseCorr, so shift was casted as zeros")
-    return shift
-
-def phase_corr_4D(image, sigma, xy_pixel=1, 
-                  z_pixel=1, ch_names=[1], 
-                  ref_ch=-1,                      
-                  save=True, save_path='',
-                  save_file='', save_shifts=True):
-    if isinstance(image, dict) == False:
-        image = {ch_names[0]:image}
-    pre_shifts = {}
-    if len(ch_names) == 1:
-        ref_ch = ch_names[0]
-    else:
-        try:
-            ref_ch = ch_names[ref_ch]
-        except:
-            ref_ch = ch_names[-1]
-    ref_im = image[ref_ch]
-    current_shift = [0 for i in ref_im[0].shape]
-    print('initial shift of 0', current_shift)
-    print(len(ref_im[1:]), ref_im[1].shape)
-    for ind, stack in enumerate(ref_im[1:]):
-        pre_shifts[ind+1] = phase_corr(ref_im[ind], stack, sigma) 
-        current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
-        print(pre_shifts[ind+1], current_shift)
-        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
-        for ch, img in image.items(): 
-            image[ch][ind] = ndimage.shift(img[ind], current_shift) 
-    if save == True:
-        for ch, img in image.items():
-            save_name = str(save_path+'PhaseCorr_'+ch+'_'+save_file)
-            if '.tif' not in save_name:
-                save_name += '.tif'
-            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)   
-    if save_shifts == True:
-        shift_file = save_path+"PhaseCorr_shifts.csv"
-        with open(shift_file, 'w', newline='') as csvfile:
-            fieldnames = ['timepoint', 'phase_shift']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for timepoint, shift in pre_shifts.items():
-                writer.writerow({'timepoint' : timepoint+1, 'phase_shift' : shift})
-        csvfile.close()
-    return image, pre_shifts
-
 def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='', save=True, save_path='', save_file=''):
     """apply N2V prediction on image based on provided model
     if save is True, save predicted image with provided info"""
@@ -680,6 +613,73 @@ def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=Tru
             save_name +='.tif'
         save_image(save_name, image_4D, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return image_4D
+
+def mask_image(volume, return_mask = False ,sig = 2):
+    """
+    Create a binary mask from a 2 or 3-dimensional np.array.
+    Method normalizes the image, converts it to greyscale, then applies gaussian bluring (kernel width set to 2 by default, can be changed with sig parameter).
+    This is followed by thresholding the image using the isodata method and returning a binary mask. 
+    Parameters
+    ----------
+    image           np.array
+                    np.array of an image (2 or 3D)
+    return_mask     bool
+                    If False (default), the mask is subtracted from the original image. If True, a boolian array is returned, of the shape of the original image, as a mask. 
+    sig             Int
+                    kernel width for gaussian smoothing. set to 2 by default.
+    Returns
+    -------
+    mask            np.array
+                    Returns a binary np.array of equal shape to the original image, labeling the masked area.
+    """
+    for i in tqdm(1, desc = '3D_mask'):
+        start_time = timer()
+        image = volume.copy()
+        # if input image is 2D...
+        image = image.astype('float32')
+        # normalize to the range 0-1
+        image -= image.min()
+        image /= image.max()
+        # blur and grayscale before thresholding
+        blur = gaussian(image, sigma=sig)
+        # perform adaptive thresholding
+        t = threshold_otsu(blur.ravel())
+        mask = blur > t
+        # convert to bool
+        mask = np.array(mask, dtype=bool)
+        print('mask_image runtime', timer()-start_time)
+    if return_mask == False:
+        image[mask==False] = 0
+        return image
+    else:
+        return mask
+
+def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
+    start_time = timer()
+    mask = image.copy()
+    mask_image = image.copy()
+    for i, img in enumerate(image):
+        print('calculating mask for stack#', i)
+        try:
+            mask[i] = mask_image(img, return_mask=False ,sig=sig)
+            mask_image[i] = mask_image(img, return_mask=True ,sig=sig)
+        except:
+            mask[i] = mask[i]
+            mask_image[i] = mask_image[i]
+        mask[i] = img_limits(mask[i], limit=255, ddtype='uint8')
+    if save == True:
+        if save_file == '':
+            save_name = save_path+'masked_image.tif'
+            mask_name = save_path+'mask.tif'
+        else:
+            mask_name = save_path+'mask_'+save_file
+            save_name = save_path+'image_mask_'+save_file
+        if '.tif' not in save_name:
+            save_name += '.tif'
+        save_image(mask_name, mask, xy_pixel=xy_pixel, z_pixel=z_pixel)
+        save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    print('mask_4D runtime', timer()-start_time)
+    return mask, mask_image
 
 def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
     s = ndimage.generate_binary_structure(len(image.shape), len(image.shape))
@@ -806,6 +806,8 @@ def segment_4D(image_4D, neu_no=10,
 ######################
 
 def main():
+    start_time = timer()
+    print('reading files and compiling image into dict of 4D images')
     parser = argparse.ArgumentParser(description='read info.txt file and perform preprocessing pipline on prvided path',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('txt_path', help='provide path to info.txt file')
@@ -843,12 +845,11 @@ def main():
         if file_4D == '':
             file_4D = os.path.basename(input_txt['path_to_data'])
             file_4D = file_4D.split('_')[0]+'.tif'    
-    
-
-    # print(type(image_4D), image_4D.keys(), type(image_4D[input_txt['ch_names'][-1]]), len(image_4D[input_txt['ch_names'][-1]]))
+    print('finished compiling images', timer()-start_time)
 
     ####### initial registration of images using phase_correlation on red channel, last channel
     if 'preshift' in input_txt['steps']:
+        start_time = timer()
         print('applying preshift')
         image_4D, pre_shifts = phase_corr_4D(image_4D, sigma=input_txt['sigma'], 
                                             xy_pixel=input_txt['xy_pixel'], 
@@ -857,19 +858,23 @@ def main():
                                             ref_ch=-1, save=True, 
                                             save_path=input_txt['save_path'],
                                             save_file=file_4D, save_shifts=True)
+    print('finished applying preshift', timer()-start_time)
 
     ###### optional deletion of last quater of slices in Z_dim of each 3D image
     #### this is to reduce the run time for Ants a little bit
     if 'trim' in input_txt['steps']:
+        start_time = timer()
         trim = int((3*image_4D[input_txt['ch_names'][-1]].shape[1])/4)
         print('image size before trimming is', image_4D[input_txt['ch_names'][-1]].shape)
         print('trimming all images in Z dim to 0:', trim)
         for ch, img in image_4D.items():
             image_4D[ch] = img[:,0:trim]
         print('image size after trimming is', image_4D[input_txt['ch_names'][-1]].shape)
+        print('finished trimming images', timer()-start_time)
 
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
+        start_time = timer()
         ref_t = input_txt['ants_ref_st']
         if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
             ref_t = 0
@@ -928,17 +933,21 @@ def main():
                 for file, similarity_check in checks.items():
                     writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
         csvfile.close()
+        print('finished antspy registration', timer()-start_time)
+
 
     if 'n2v' in input_txt['steps']:
-        print('applying N2V on image    `')
+        start_time = timer()
+        print('applying N2V on image')
         image_4D[input_txt['ch_names'][0]] = N2V_4D(image_4D[input_txt['ch_names'][0]],
                                                     model_name=input_txt['model_name'], 
                                                     model_path=input_txt['model_path'], 
                                                     save=True, save_path=input_txt['save_path'],
                                                     xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                     save_file=input_txt['ch_names'][0]+'_'+file_4D) 
-        print('finished applying N2V')
+        print('finished applying N2V', timer()-start_time)
     if 'clahe' in input_txt['steps']:
+        start_time = timer()
         print('applying clahe on image')
         image_4D[input_txt['ch_names'][0]] = clahe_4D(image_4D[input_txt['ch_names'][0]],
                                                       kernel_size=input_txt['kernel_size'],
@@ -946,9 +955,10 @@ def main():
                                                       xy_pixel=input_txt['xy_pixel'], z_pixel=input_txt['z_pixel'],
                                                       save=True, save_path=input_txt['save_path'], 
                                                       save_file=input_txt['ch_names'][0]+'_'+file_4D)
-        print('finished applying clahe')                                                      
+        print('finished applying clahe', timer()-start_time)                                                      
     ##### masking 
     if 'mask' in input_txt['steps']:
+        start_time = timer()
         print('create image mask')
         mask, image_4D[input_txt['ch_names'][0]] = mask_4D(image_4D[input_txt['ch_names'][0]], 
                                                             sig=2, save=True, 
@@ -956,9 +966,10 @@ def main():
                                                             xy_pixel=input_txt['xy_pixel'], 
                                                             z_pixel=input_txt['z_pixel'],
                                                             save_file=input_txt['ch_names'][0]+'_'+file_4D)
-        print('finished applying mask')
+        print('finished applying mask', timer()-start_time)
 
     if 'segment' in input_txt['steps']:
+        start_time = timer()
         print('segmenting neurons')
         neurons = segment_4D(image_4D[input_txt['ch_names'][0]], 
                             neu_no=10, save=True, 
@@ -966,7 +977,7 @@ def main():
                             xy_pixel=input_txt['xy_pixel'], 
                             z_pixel=input_txt['z_pixel'],
                             save_file=input_txt['ch_names'][0]+'_'+file_4D)
-        print('finished segmenting neurons')
+        print('finished segmenting neurons', timer()-start_time)
 
     if 'postshift' in input_txt['steps']:
         start_time = timer()
