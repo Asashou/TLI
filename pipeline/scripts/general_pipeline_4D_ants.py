@@ -948,126 +948,126 @@ def main():
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
         start_time = timer()
-        ref_t = input_txt['ants_ref_st']
-        if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
-            ref_t = 0
-        ants_shifts = {}
-        for i, drift_t in enumerate(input_txt['drift_corr']):
-            ants_step = str(i+1)+'_'+drift_t
-            try:
-                metric_t = input_txt['metric'][i]
-            except:
-                for i in [0]:
-                    print('optimization metric not recognized. mattes used instead')
-                    metric_t = 'mattes'
-            image_4D, ants_shifts[ants_step] = apply_ants_4D(image_4D, 
-                                                            drift_corr=drift_t,  
-                                                            xy_pixel=input_txt['xy_pixel'], 
-                                                            z_pixel=input_txt['z_pixel'], 
-                                                            ch_names=input_txt['ch_names'], 
-                                                            ref_t=ref_t,
-                                                            ref_ch=-1, 
-                                                            metric=metric_t,
-                                                            reg_iterations=input_txt['reg_iterations'], 
-                                                            aff_iterations=input_txt['aff_iterations'], 
-                                                            aff_shrink_factors=input_txt['aff_shrink_factors'], 
-                                                            aff_smoothing_sigmas=input_txt['aff_smoothing_sigmas'],
-                                                            grad_step=input_txt['grad_step'], 
-                                                            flow_sigma=input_txt['flow_sigma'], 
-                                                            total_sigma=input_txt['total_sigma'],
-                                                            aff_sampling=input_txt['aff_sampling'], 
-                                                            syn_sampling=input_txt['syn_sampling'], 
-                                                            check_ch=input_txt['ch_names'][0],                       
-                                                            save=True, 
-                                                            save_path=input_txt['save_path'],
-                                                            save_file=str(i+1)+'_'+file_4D)
-            print('finished ants run with', drift_t)
-        ###### saving shifts mats as csv
-        # shift_file = input_txt['save_path']+"ants_shifts.csv"
-        # with open(shift_file, 'w', newline='') as csvfile:
-        #     fieldnames = ['reg_step', 'timepoint', 'ants_shift']
+        # ref_t = input_txt['ants_ref_st']
+        # if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
+        #     ref_t = 0
+        # ants_shifts = {}
+        # for i, drift_t in enumerate(input_txt['drift_corr']):
+        #     ants_step = str(i+1)+'_'+drift_t
+        #     try:
+        #         metric_t = input_txt['metric'][i]
+        #     except:
+        #         for i in [0]:
+        #             print('optimization metric not recognized. mattes used instead')
+        #             metric_t = 'mattes'
+        #     image_4D, ants_shifts[ants_step] = apply_ants_4D(image_4D, 
+        #                                                     drift_corr=drift_t,  
+        #                                                     xy_pixel=input_txt['xy_pixel'], 
+        #                                                     z_pixel=input_txt['z_pixel'], 
+        #                                                     ch_names=input_txt['ch_names'], 
+        #                                                     ref_t=ref_t,
+        #                                                     ref_ch=-1, 
+        #                                                     metric=metric_t,
+        #                                                     reg_iterations=input_txt['reg_iterations'], 
+        #                                                     aff_iterations=input_txt['aff_iterations'], 
+        #                                                     aff_shrink_factors=input_txt['aff_shrink_factors'], 
+        #                                                     aff_smoothing_sigmas=input_txt['aff_smoothing_sigmas'],
+        #                                                     grad_step=input_txt['grad_step'], 
+        #                                                     flow_sigma=input_txt['flow_sigma'], 
+        #                                                     total_sigma=input_txt['total_sigma'],
+        #                                                     aff_sampling=input_txt['aff_sampling'], 
+        #                                                     syn_sampling=input_txt['syn_sampling'], 
+        #                                                     check_ch=input_txt['ch_names'][0],                       
+        #                                                     save=True, 
+        #                                                     save_path=input_txt['save_path'],
+        #                                                     save_file=str(i+1)+'_'+file_4D)
+        #     print('finished ants run with', drift_t)
+        # ###### saving shifts mats as csv
+        # # shift_file = input_txt['save_path']+"ants_shifts.csv"
+        # # with open(shift_file, 'w', newline='') as csvfile:
+        # #     fieldnames = ['reg_step', 'timepoint', 'ants_shift']
+        # #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        # #     writer.writeheader()
+        # #     for reg_step, shifts in ants_shifts.items():
+        # #         for timepoint, ind_shift in shifts.items():
+        # #             writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
+        # # csvfile.close()  
+        # ###### doing final similarity check after antspy, and saving values
+        # similairties = {}
+        # for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
+        #     img_t = image_4D[input_txt['ch_names'][0]][t]
+        #     similairties[t+1] = check_similarity(img_t, img)
+        # checks_file = input_txt['save_path']+"similarity_check.csv"
+        # with open(checks_file, 'w', newline='') as csvfile:
+        #     fieldnames = ['reg_step', 'file', 'similarity_check']
         #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         #     writer.writeheader()
-        #     for reg_step, shifts in ants_shifts.items():
-        #         for timepoint, ind_shift in shifts.items():
-        #             writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
-        # csvfile.close()  
-        ###### doing final similarity check after antspy, and saving values
-        similairties = {}
-        for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
-            img_t = image_4D[input_txt['ch_names'][0]][t]
-            similairties[t+1] = check_similarity(img_t, img)
-        checks_file = input_txt['save_path']+"similarity_check.csv"
-        with open(checks_file, 'w', newline='') as csvfile:
-            fieldnames = ['reg_step', 'file', 'similarity_check']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for reg_step, checks in similarity_check.items():
-                for file, similarity_check in checks.items():
-                    writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
-        csvfile.close()
+        #     for reg_step, checks in similarity_check.items():
+        #         for file, similarity_check in checks.items():
+        #             writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
+        # csvfile.close()
         print('finished antspy registration', timer()-start_time)
 
     if 'postshift' in input_txt['steps']:
         start_time = timer()
-        if 'neurons' not in locals():
-            neurons = {1: image_4D[input_txt['ch_names'][0]]}
-        if ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][0]]):
-            ref_t = 0
-        for l, neuron in neurons.items():
-            image = image_4D.copy()
-            image[input_txt['ch_names'][0]] = neuron
-            post_shifts = {}
-            for i, drift_t in enumerate(input_txt['drift_corr']):
-                ants_step = str(i+1)+'_'+drift_t
-                try:
-                    metric_t = input_txt['metric'][i]
-                except:
-                    for i in [0]:
-                        print('optimization metric not recognized. mattes used instead')
-                        metric_t = 'mattes'
-                image_4D, post_shifts[ants_step] = apply_ants_4D(image, 
-                                                                drift_corr=drift_t,  
-                                                                xy_pixel=input_txt['xy_pixel'], 
-                                                                z_pixel=input_txt['z_pixel'], 
-                                                                ch_names=input_txt['ch_names'], 
-                                                                ref_t=ref_t,
-                                                                ref_ch=0, ### this is the main defference between ants and postshift
-                                                                metric=metric_t,
-                                                                reg_iterations=input_txt['reg_iterations'], 
-                                                                aff_iterations=input_txt['aff_iterations'], 
-                                                                aff_shrink_factors=input_txt['aff_shrink_factors'], 
-                                                                aff_smoothing_sigmas=input_txt['aff_smoothing_sigmas'],
-                                                                grad_step=input_txt['grad_step'], 
-                                                                flow_sigma=input_txt['flow_sigma'], 
-                                                                total_sigma=input_txt['total_sigma'],
-                                                                aff_sampling=input_txt['aff_sampling'], 
-                                                                syn_sampling=input_txt['syn_sampling'], 
-                                                                check_ch=input_txt['ch_names'][0],                       
-                                                                save=True, 
-                                                                save_path=input_txt['save_path'],
-                                                                save_file='neuron'+str(l)+str(i+1)+'_'+file_4D)
-                print('finished postshift on neuron %i run with' %l, drift_t)
-                image = None
-        similairties = {}
-        for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
-            img_t = image_4D[input_txt['ch_names'][0]][t]
-            similairties[t+1] = check_similarity(img_t, img)
-        checks_file = input_txt['save_path']+"final_similarity_check.csv"
-        with open(checks_file, 'w', newline='') as csvfile:
-            fieldnames = ['reg_step', 'file', 'similarity_check']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for reg_step, checks in similarity_check.items():
-                for file, similarity_check in checks.items():
-                    writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
-        csvfile.close()
+        # if 'neurons' not in locals():
+        #     neurons = {1: image_4D[input_txt['ch_names'][0]]}
+        # if ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][0]]):
+        #     ref_t = 0
+        # for l, neuron in neurons.items():
+        #     image = image_4D.copy()
+        #     image[input_txt['ch_names'][0]] = neuron
+        #     post_shifts = {}
+        #     for i, drift_t in enumerate(input_txt['drift_corr']):
+        #         ants_step = str(i+1)+'_'+drift_t
+        #         try:
+        #             metric_t = input_txt['metric'][i]
+        #         except:
+        #             for i in [0]:
+        #                 print('optimization metric not recognized. mattes used instead')
+        #                 metric_t = 'mattes'
+        #         image_4D, post_shifts[ants_step] = apply_ants_4D(image, 
+        #                                                         drift_corr=drift_t,  
+        #                                                         xy_pixel=input_txt['xy_pixel'], 
+        #                                                         z_pixel=input_txt['z_pixel'], 
+        #                                                         ch_names=input_txt['ch_names'], 
+        #                                                         ref_t=ref_t,
+        #                                                         ref_ch=0, ### this is the main defference between ants and postshift
+        #                                                         metric=metric_t,
+        #                                                         reg_iterations=input_txt['reg_iterations'], 
+        #                                                         aff_iterations=input_txt['aff_iterations'], 
+        #                                                         aff_shrink_factors=input_txt['aff_shrink_factors'], 
+        #                                                         aff_smoothing_sigmas=input_txt['aff_smoothing_sigmas'],
+        #                                                         grad_step=input_txt['grad_step'], 
+        #                                                         flow_sigma=input_txt['flow_sigma'], 
+        #                                                         total_sigma=input_txt['total_sigma'],
+        #                                                         aff_sampling=input_txt['aff_sampling'], 
+        #                                                         syn_sampling=input_txt['syn_sampling'], 
+        #                                                         check_ch=input_txt['ch_names'][0],                       
+        #                                                         save=True, 
+        #                                                         save_path=input_txt['save_path'],
+        #                                                         save_file='neuron'+str(l)+str(i+1)+'_'+file_4D)
+        #         print('finished postshift on neuron %i run with' %l, drift_t)
+        #         image = None
+        # similairties = {}
+        # for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
+        #     img_t = image_4D[input_txt['ch_names'][0]][t]
+        #     similairties[t+1] = check_similarity(img_t, img)
+        # checks_file = input_txt['save_path']+"final_similarity_check.csv"
+        # with open(checks_file, 'w', newline='') as csvfile:
+        #     fieldnames = ['reg_step', 'file', 'similarity_check']
+        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        #     writer.writeheader()
+        #     for reg_step, checks in similarity_check.items():
+        #         for file, similarity_check in checks.items():
+        #             writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
+        # csvfile.close()
         print('total ruuntime of postshift', timer()-start_time)
     
-    mem_use()
-    gc.collect()
-    mem_use() 
-    print('total ruuntime of pipeline', timer()-start_time)
+    # mem_use()
+    # gc.collect()
+    # mem_use() 
+    # print('total ruuntime of pipeline', timer()-start_time)
 
 
 if __name__ == '__main__':
