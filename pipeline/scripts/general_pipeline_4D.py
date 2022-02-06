@@ -3,9 +3,9 @@ start_time = timer()
 print('pipeline start', start_time)
 # We import all our dependencies.
 import argparse
-import enum #I don't remember why I have this package
+# import enum #I don't remember why I have this package
 import os
-from pickle import FALSE #I don't remember why I have this package
+# from pickle import FALSE #I don't remember why I have this package
 import time #I don't remember why I have this package
 import cv2 as cv
 import numpy as np 
@@ -222,7 +222,8 @@ def files_to_4D(files_list, ch_names=[''],
                 save_name += '.tif'
             save_img = img.copy()
             for tim, stack in enumerate(save_img):
-                save_img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
+                if stack.min()!= 0 or stack.dtype != ddtype:
+                    save_img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
             save_image(save_name, save_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
     # print('image_properties', image_4D.keys(), type(image_4D[ch_names[-1]]), 'saved_image dtype', type(save_img))
     print('files_to_4D runtime', timer()-start_time)
@@ -306,8 +307,8 @@ def phase_corr_4D(image, sigma, xy_pixel=1,
     current_shift = [0 for i in ref_im[0].shape]
     print('initial shift of 0', current_shift)
     print(len(ref_im[1:]), ref_im[1].shape)
-    for ind, stack in enumerate(ref_im[1:]):
-        pre_shifts[ind+1] = phase_corr(ref_im[ind], stack, sigma) 
+    for ind in tqdm(np.arange(len(ref_im[1:]))) :
+        pre_shifts[ind+1] = phase_corr(ref_im[ind], ref_im[ind+1], sigma) 
         current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
         print(pre_shifts[ind+1], current_shift)
         print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
@@ -366,7 +367,8 @@ def N2V_predict(model_name, model_path, xy_pixel=1, z_pixel=1, image=0, file='',
     file_name = os.path.basename(file)
     model = N2V(config=None, name=model_name, basedir=model_path)
     predict = model.predict(image, axes='ZYX', n_tiles=None)
-    predict = img_limits(predict, limit=0)
+    if predict.min() != 0:
+        predict = img_limits(predict, limit=0)
     if save == True:
         if save_file == '':
             save_name = str(save_path+'N2V_'+file_name)
@@ -411,7 +413,8 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
                             thresh=np.percentile(image_clahe[ind], 95), 
                             maxval=image_clahe[ind].max(), 
                             type= cv.THRESH_TOZERO)[1]
-    image_clahe = img_limits(image_clahe, limit=0)
+    if image_clahe.min() != 0:
+        image_clahe = img_limits(image_clahe, limit=0)
     if save == True:
         if save_file == '':
             save_name = save_path+'clahe_'+file_name
@@ -869,7 +872,7 @@ def main():
            image_4D = {ch:io.imread(files_list[ind]) for ind, ch in enumerate(temp)} 
     elif os.path.isfile(input_txt['path_to_data']):
         image_4D = {input_txt['ch_names'][0]:io.imread(input_txt['path_to_data'])}
-        files_list = [i for i in np.arange(len(image_4D))]
+        files_list = [i for i in np.arange(len(image_4D))]  ### I don't remember why I needed this line
         if file_4D == '':
             file_4D = os.path.basename(input_txt['path_to_data'])
             file_4D = file_4D.split('_')[0]+'.tif'    
@@ -890,7 +893,7 @@ def main():
 
         #### extra step to run similarity after phase_corr
         similarity_4D(image_4D[input_txt['ch_names'][0]], save=True, save_path=input_txt['save_path'], save_file='')
-
+        del pre_shifts
     ###### optional deletion of last quater of slices in Z_dim of each 3D image
     #### this is to reduce the run time for Ants a little bit
     if 'trim' in input_txt['steps']:
