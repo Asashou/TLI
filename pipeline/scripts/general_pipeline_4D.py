@@ -3,7 +3,7 @@ start_time = timer()
 print('pipeline start', start_time)
 # We import all our dependencies.
 import argparse
-# import enum #I don't remember why I have this package
+import enum #I don't remember why I have this package
 import os
 # from pickle import FALSE #I don't remember why I have this package
 import time #I don't remember why I have this package
@@ -340,7 +340,7 @@ def check_similarity(ref, image):
 def similarity_4D(image_4D, save=True, save_path='', save_file=''):
     start_time = timer()
     similairties = {1:1}
-    for t in tqdm(image_4D[1:], desc='cosine_sim for timepoint'):
+    for t in tqdm(np.arange(len(image_4D[1:])), desc='cosine_sim for timepoint'):
         img_t = image_4D[t]
         similairties[t+2] = check_similarity(img_t, image_4D[t+1])
     if save == True:
