@@ -4,7 +4,7 @@ purpose: preprocessing session 211104 with pipeline from 220205
 
 ### provided paths: data_path, saving_path and n2v model path
 path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run2/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
 ### basename of output tiff files
@@ -17,7 +17,7 @@ reg_subset: 0,60,325,600,300,650  ##Z,Y,X slicing. In case no subset required, t
 # reg_subset is not used in current 4D_pipeline
 
 ### preprocessing steps to apply
-steps: compile, ants
+steps: compile, n2v, clahe, mask
 #all means ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
 
 ### rotation and image_flip (not implemented yet)

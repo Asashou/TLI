@@ -766,8 +766,17 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
     start_time = timer()
     if isinstance(image, dict) == False:
         image = {ch_names[0]:image}
+    try:
+        s_range = len(image[ch_names[-1]])
+    except:
+        try:
+            s_range = image[ch_names[-1]].shape[0]
+            print('worked')
+        except:
+            s_range = len(image[ch_names[-1]].numpy())
+            print('worked')
     scope = np.arange(0,ref_t)
-    scope = np.concatenate((scope, np.arange(ref_t,len(image[ch_names[-1]]))))
+    scope = np.concatenate((scope, np.arange(ref_t,s_range)))
     print('ants seq for 4D regi',scope)
     for ch in ch_names:
         try:
