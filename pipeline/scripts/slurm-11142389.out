@@ -1,0 +1,263 @@
+================================================================================
+JobID = 11142389
+User = aicha.hajiali, Account = all
+Partition = gpu, Nodelist = dge010
+================================================================================
+2022-02-06 13:04:04.968912: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
+2022-02-06 13:04:04.968971: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+pipeline start 21907539.89762805
+finished loading packages 61.51293462887406
+reading files and compiling image into dict of 4D images
+getting info from /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/all/general_pipeline_info.txt
+32 lines found in txt_file with : as the delimiter
+channel defined for similarity_check not recognized, so ch_0 used
+{'script_run': 'general_pipline_4D.py', 'purpose': 'preprocessing session 211104 with pipeline from 220205', 'path_to_data': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/', 'save_path': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/all/', 'model_path': '/home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/', 'output_name': '211104_brain1.2_LP40_P36.tif', 'group': '211104_brain1.2_LP40_P36', 'ch_names': ['GFP', 'red'], 'reg_subset': (0, 60, 325, 600, 300, 650), 'steps': ['compile', 'preshift', 'n2v', 'clahe', 'mask'], 'rotat_O': 6.0, 'Flip': False, 'xy_pixel': 0.0764616, 'z_pixel': 0.4, 'clipLimit': 1.0, 'kernel_size': (45, 45), 'model_name': 'n2v_3D_v6', 'reference_last': False, 'ants_ref_no': 1.0, 'ref_reset': 50.0, 'save_pre_shift': True, 'sigma': 5.0, 'drift_corr': ['Rigid', 'Affine', 'SyNRA'], 'metric': ['meansquares', 'mattes', 'CC'], 'grad_step': 0.2, 'flow_sigma': 3.0, 'total_sigma': 0.0, 'aff_sampling': 32.0, 'reg_iterations': (240, 80, 20), 'aff_iterations': (3000, 1200, 1200, 60), 'aff_shrink_factors': (6, 4, 2, 1), 'aff_smoothing_sigmas': (3, 2, 1, 0), 'check_ch': 'GFP', 'aff_random_sampling_rate': 0.2, 'syn_sampling': 32, 'ants_ref_st': 0}
+reading_text runtime 0.03391939774155617
+finished reading txt file 0.037225257605314255
+files_list runtime 0.02556668221950531
+the first 5 files (including ref) are ['/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00001.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00002.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00003.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00004.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00005.tif']
+compiling 3D image_files into dict of 4D_images of specified channels
+compiling_files:   0%|          | 0/89 [00:00<?, ?it/s]<tifffile.TiffFile '211104_brain1.2_…0_P36_00001.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   1%|          | 1/89 [00:05<08:19,  5.68s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00002.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   2%|▏         | 2/89 [00:11<08:10,  5.64s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00003.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   3%|▎         | 3/89 [00:16<08:05,  5.65s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00004.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   4%|▍         | 4/89 [00:22<08:00,  5.65s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00005.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   6%|▌         | 5/89 [00:28<07:55,  5.66s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00006.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   7%|▋         | 6/89 [00:33<07:50,  5.66s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00007.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   8%|▊         | 7/89 [00:39<07:46,  5.69s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00008.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   9%|▉         | 8/89 [00:45<07:41,  5.70s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00009.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  10%|█         | 9/89 [00:51<07:36,  5.71s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00010.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  11%|█         | 10/89 [00:56<07:30,  5.70s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00011.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  12%|█▏        | 11/89 [01:02<07:24,  5.70s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00012.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  13%|█▎        | 12/89 [01:08<07:19,  5.71s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00013.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  15%|█▍        | 13/89 [01:13<07:14,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00014.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  16%|█▌        | 14/89 [01:19<07:09,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00015.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  17%|█▋        | 15/89 [01:25<07:02,  5.71s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00016.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  18%|█▊        | 16/89 [01:31<06:59,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00017.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  19%|█▉        | 17/89 [01:36<06:53,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00018.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  20%|██        | 18/89 [01:42<06:47,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00019.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  21%|██▏       | 19/89 [01:48<06:41,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00020.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  22%|██▏       | 20/89 [01:54<06:35,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00021.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  24%|██▎       | 21/89 [01:59<06:30,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00022.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  25%|██▍       | 22/89 [02:06<06:33,  5.87s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00023.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  26%|██▌       | 23/89 [02:11<06:23,  5.82s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00024.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  27%|██▋       | 24/89 [02:17<06:16,  5.79s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00025.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  28%|██▊       | 25/89 [02:23<06:08,  5.76s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00026.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  29%|██▉       | 26/89 [02:28<06:02,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00027.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  30%|███       | 27/89 [02:34<05:55,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00028.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  31%|███▏      | 28/89 [02:40<05:49,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00029.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  33%|███▎      | 29/89 [02:46<05:43,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00030.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  34%|███▎      | 30/89 [02:51<05:38,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00031.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  35%|███▍      | 31/89 [02:57<05:32,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00032.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  36%|███▌      | 32/89 [03:03<05:30,  5.79s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00033.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  37%|███▋      | 33/89 [03:09<05:23,  5.77s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00034.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  38%|███▊      | 34/89 [03:14<05:17,  5.77s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00035.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  39%|███▉      | 35/89 [03:20<05:10,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00036.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  40%|████      | 36/89 [03:26<05:03,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00037.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  42%|████▏     | 37/89 [03:32<04:57,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00038.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  43%|████▎     | 38/89 [03:37<04:51,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00039.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  44%|████▍     | 39/89 [03:43<04:46,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00040.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  45%|████▍     | 40/89 [03:49<04:40,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00041.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  46%|████▌     | 41/89 [03:55<04:35,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00042.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  47%|████▋     | 42/89 [04:00<04:29,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00043.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  48%|████▊     | 43/89 [04:06<04:23,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00044.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  49%|████▉     | 44/89 [04:12<04:17,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00045.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  51%|█████     | 45/89 [04:18<04:15,  5.80s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00046.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  52%|█████▏    | 46/89 [04:24<04:14,  5.91s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00047.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  53%|█████▎    | 47/89 [04:30<04:06,  5.87s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00048.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  54%|█████▍    | 48/89 [04:35<03:58,  5.82s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00049.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  55%|█████▌    | 49/89 [04:41<03:51,  5.80s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00050.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  56%|█████▌    | 50/89 [04:47<03:44,  5.77s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00051.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  57%|█████▋    | 51/89 [04:52<03:38,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00052.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+1.0367164239287376 image new limits and type: 0 4565 uint16
+1.012508261948824 image new limits and type: 0 1177 uint16
+split_convert runtime 2.418556869029999
+1.0122982375323772 image new limits and type: 0 4659 uint16
+1.0107688084244728 image new limits and type: 0 910 uint16
+split_convert runtime 2.392173245549202
+1.012310765683651 image new limits and type: 0 4782 uint16
+1.012584999203682 image new limits and type: 0 988 uint16
+split_convert runtime 2.393989399075508
+1.018374741077423 image new limits and type: 0 4485 uint16
+1.0181907638907433 image new limits and type: 0 927 uint16
+split_convert runtime 2.4057447873055935
+1.0184741728007793 image new limits and type: 0 4423 uint16
+1.0182137601077557 image new limits and type: 0 926 uint16
+split_convert runtime 2.4061000794172287
+1.0287769474089146 image new limits and type: 0 4999 uint16
+1.0297580249607563 image new limits and type: 0 941 uint16
+split_convert runtime 2.4321065321564674
+1.0309926606714725 image new limits and type: 0 5024 uint16
+1.0302076563239098 image new limits and type: 0 849 uint16
+split_convert runtime 2.4349773675203323
+1.0299355760216713 image new limits and type: 0 5076 uint16
+1.0301494896411896 image new limits and type: 0 1180 uint16
+split_convert runtime 2.4337425529956818
+1.029273945838213 image new limits and type: 0 5053 uint16
+1.0297911502420902 image new limits and type: 0 853 uint16
+split_convert runtime 2.432723995298147
+1.0292092263698578 image new limits and type: 0 4771 uint16
+1.0288479030132294 image new limits and type: 0 972 uint16
+split_convert runtime 2.4314178079366684
+1.0299803912639618 image new limits and type: 0 5007 uint16
+1.0309538654983044 image new limits and type: 0 1038 uint16
+split_convert runtime 2.4344893395900726
+1.0290046818554401 image new limits and type: 0 4655 uint16
+1.029574815183878 image new limits and type: 0 809 uint16
+split_convert runtime 2.432302162051201
+1.0291310101747513 image new limits and type: 0 5285 uint16
+1.02915570884943 image new limits and type: 0 838 uint16
+split_convert runtime 2.431609809398651
+1.0298065580427647 image new limits and type: 0 4593 uint16
+1.0300906263291836 image new limits and type: 0 1076 uint16
+split_convert runtime 2.4334330521523952
+1.030825313180685 image new limits and type: 0 5004 uint16
+1.0303896702826023 image new limits and type: 0 1091 uint16
+split_convert runtime 2.434689976274967
+1.0291287004947662 image new limits and type: 0 4878 uint16
+1.0305060110986233 image new limits and type: 0 947 uint16
+split_convert runtime 2.4335594810545444
+1.0299405567348003 image new limits and type: 0 5436 uint16
+1.0287761464715004 image new limits and type: 0 957 uint16
+split_convert runtime 2.4321144185960293
+1.0296355746686459 image new limits and type: 0 5029 uint16
+1.030271716415882 image new limits and type: 0 886 uint16
+split_convert runtime 2.4334853664040565
+1.0295783504843712 image new limits and type: 0 5717 uint16
+1.0298892222344875 image new limits and type: 0 906 uint16
+split_convert runtime 2.4334782287478447
+1.030181609094143 image new limits and type: 0 4836 uint16
+1.0311762057244778 image new limits and type: 0 1264 uint16
+split_convert runtime 2.435070440173149
+1.0288101397454739 image new limits and type: 0 4824 uint16
+1.029066663235426 image new limits and type: 0 898 uint16
+split_convert runtime 2.43128926679492
+1.0272900871932507 image new limits and type: 0 5324 uint16
+1.0276705734431744 image new limits and type: 0 868 uint16
+split_convert runtime 2.428542859852314
+1.0274211019277573 image new limits and type: 0 5344 uint16
+1.0273277312517166 image new limits and type: 0 943 uint16
+split_convert runtime 2.4283561296761036
+1.0266695506870747 image new limits and type: 0 5241 uint16
+1.0281535387039185 image new limits and type: 0 956 uint16
+split_convert runtime 2.428487829864025
+1.027260072529316 image new limits and type: 0 4894 uint16
+1.0286032743752003 image new limits and type: 0 953 uint16
+split_convert runtime 2.429438289254904
+1.027175523340702 image new limits and type: 0 5383 uint16
+1.0299236811697483 image new limits and type: 0 987 uint16
+split_convert runtime 2.4307918027043343
+1.0237347036600113 image new limits and type: 0 5197 uint16
+1.0227904170751572 image new limits and type: 0 1005 uint16
+split_convert runtime 2.420009758323431
+1.0288628414273262 image new limits and type: 0 5795 uint16
+1.0303934514522552 image new limits and type: 0 918 uint16
+split_convert runtime 2.432865310460329
+1.0293131321668625 image new limits and type: 0 5533 uint16
+1.0289528667926788 image new limits and type: 0 1004 uint16
+split_convert runtime 2.431777372956276
+1.028653807938099 image new limits and type: 0 5472 uint16
+1.0295845568180084 image new limits and type: 0 964 uint16
+split_convert runtime 2.4318429566919804
+1.0293545052409172 image new limits and type: 0 5792 uint16
+1.0299687571823597 image new limits and type: 0 971 uint16
+split_convert runtime 2.432721830904484
+1.0296848379075527 image new limits and type: 0 5344 uint16
+1.0320012159645557 image new limits and type: 0 1025 uint16
+split_convert runtime 2.4352319687604904
+1.0301081277430058 image new limits and type: 0 5298 uint16
+1.0298156403005123 image new limits and type: 0 939 uint16
+split_convert runtime 2.4334350004792213
+1.0291134864091873 image new limits and type: 0 5650 uint16
+1.0306977666914463 image new limits and type: 0 1229 uint16
+split_convert runtime 2.433680411428213
+1.0290964245796204 image new limits and type: 0 5468 uint16
+1.03061031550169 image new limits and type: 0 975 uint16
+split_convert runtime 2.4331788942217827
+1.0230811461806297 image new limits and type: 0 5940 uint16
+1.0244499519467354 image new limits and type: 0 984 uint16
+split_convert runtime 2.421166379004717
+1.030139271169901 image new limits and type: 0 5414 uint16
+1.0285458266735077 image new limits and type: 0 973 uint16
+split_convert runtime 2.432286363095045
+1.031178291887045 image new limits and type: 0 6043 uint16
+1.030380416661501 image new limits and type: 0 1128 uint16
+split_convert runtime 2.435184992849827
+1.0304695554077625 image new limits and type: 0 5316 uint16
+1.0300712063908577 image new limits and type: 0 987 uint16
+split_convert runtime 2.434040606021881
+1.0288294292986393 image new limits and type: 0 5735 uint16
+1.030007366091013 image new limits and type: 0 969 uint16
+split_convert runtime 2.432343151420355
+1.0301119275391102 image new limits and type: 0 6046 uint16
+1.0297000631690025 image new limits and type: 0 996 uint16
+split_convert runtime 2.4331494197249413
+1.029885422438383 image new limits and type: 0 5796 uint16
+1.0315690077841282 image new limits and type: 0 990 uint16
+split_convert runtime 2.4349431358277798
+1.030090894550085 image new limits and type: 0 5986 uint16
+1.0307909809052944 image new limits and type: 0 1156 uint16
+split_convert runtime 2.434729102998972
+1.0294368900358677 image new limits and type: 0 5784 uint16
+1.0340507179498672 image new limits and type: 0 1242 uint16
+split_convert runtime 2.4372087456285954
+1.0299242101609707 image new limits and type: 0 6141 uint16
+1.0298950970172882 image new limits and type: 0 976 uint16
+split_convert runtime 2.4334764070808887
+1.0295507870614529 image new limits and type: 0 6452 uint16
+1.0303625278174877 image new limits and type: 0 1059 uint16
+split_convert runtime 2.433876723051071
+1.0297325626015663 image new limits and type: 0 5613 uint16
+1.0304344482719898 image new limits and type: 0 1049 uint16
+split_convert runtime 2.4339925348758698
+1.029747650027275 image new limits and type: 0 5796 uint16
+1.0305647403001785 image new limits and type: 0 1016 uint16
+split_convert runtime 2.4339025989174843
+1.030545324087143 image new limits and type: 0 6215 uint16
+1.0347890295088291 image new limits and type: 0 1130 uint16
+split_convert runtime 2.4387443512678146
+1.0298838876187801 image new limits and type: 0 6021 uint16
+1.0311787240207195 image new limits and type: 0 992 uint16
+split_convert runtime 2.4348618164658546
+1.033218875527382 image new limits and type: 0 6672 uint16
+1.030840139836073 image new limits and type: 0 1053 uint16
+split_convert runtime 2.437590580433607
+1.0300754085183144 image new limits and type: 0 6320 uint16
+compiling_files:  58%|█████▊    | 52/89 [04:58<03:32,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00053.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  60%|█████▉    | 53/89 [05:04<03:26,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00054.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  61%|██████    | 54/89 [05:10<03:20,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00055.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  62%|██████▏   | 55/89 [05:15<03:14,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00056.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  63%|██████▎   | 56/89 [05:21<03:08,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00057.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  64%|██████▍   | 57/89 [05:27<03:03,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00058.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  65%|██████▌   | 58/89 [05:32<02:57,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00059.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  66%|██████▋   | 59/89 [05:38<02:51,  5.71s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00060.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  67%|██████▋   | 60/89 [05:44<02:45,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00061.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  69%|██████▊   | 61/89 [05:50<02:40,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00062.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  70%|██████▉   | 62/89 [05:55<02:34,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00063.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  71%|███████   | 63/89 [06:01<02:28,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00064.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  72%|███████▏  | 64/89 [06:07<02:23,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00065.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  73%|███████▎  | 65/89 [06:13<02:17,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00066.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  74%|███████▍  | 66/89 [06:18<02:11,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00067.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  75%|███████▌  | 67/89 [06:24<02:05,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00068.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  76%|███████▋  | 68/89 [06:30<02:00,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00069.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  78%|███████▊  | 69/89 [06:35<01:54,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00070.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  79%|███████▊  | 70/89 [06:41<01:48,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00071.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  80%|███████▉  | 71/89 [06:47<01:43,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00072.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  81%|████████  | 72/89 [06:53<01:37,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00073.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  82%|████████▏ | 73/89 [06:58<01:31,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00074.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  83%|████████▎ | 74/89 [07:04<01:26,  5.77s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00075.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  84%|████████▍ | 75/89 [07:10<01:20,  5.77s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00076.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  85%|████████▌ | 76/89 [07:16<01:14,  5.76s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00077.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  87%|████████▋ | 77/89 [07:21<01:08,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00078.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  88%|████████▊ | 78/89 [07:27<01:03,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00079.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  89%|████████▉ | 79/89 [07:33<00:57,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00080.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  90%|████████▉ | 80/89 [07:39<00:51,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00081.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  91%|█████████ | 81/89 [07:44<00:45,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00082.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  92%|█████████▏| 82/89 [07:50<00:40,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00083.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  93%|█████████▎| 83/89 [07:56<00:34,  5.75s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00084.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  94%|█████████▍| 84/89 [08:02<00:28,  5.74s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00085.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  96%|█████████▌| 85/89 [08:07<00:22,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00086.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  97%|█████████▋| 86/89 [08:13<00:17,  5.73s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00087.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  98%|█████████▊| 87/89 [08:19<00:11,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00088.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  99%|█████████▉| 88/89 [08:24<00:05,  5.72s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00089.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files: 100%|██████████| 89/89 [08:30<00:00,  5.73s/it]compiling_files: 100%|██████████| 89/89 [08:30<00:00,  5.74s/it]

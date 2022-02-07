@@ -1,0 +1,19 @@
+================================================================================
+JobID = 11141580
+User = aicha.hajiali, Account = all
+Partition = gpu, Nodelist = dge009
+================================================================================
+2022-02-06 12:53:25.047420: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
+2022-02-06 12:53:25.047476: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+pythondied with signal 9
+============ Job Information ===================================================
+Submitted: 2022-02-06T12:52:55
+Started: 2022-02-06T12:53:14
+Ended: 2022-02-06T13:05:58
+Elapsed: 13 min, Limit: 2820 min, Difference: 2807 min
+CPUs: 24, Nodes: 1
+============= ProfiT-HPC =======================================================
+To generate the ProfiT-HPC text report, run the following command
+profit-hpc 11141580
+================================================================================
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=11141580.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

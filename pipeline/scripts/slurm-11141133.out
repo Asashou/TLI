@@ -1,0 +1,863 @@
+================================================================================
+JobID = 11141133
+User = aicha.hajiali, Account = all
+Partition = gpu, Nodelist = dge009
+================================================================================
+2022-02-06 09:11:19.449763: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
+2022-02-06 09:11:19.449819: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+pipeline start 3795784.818061553
+finished loading packages 55.56425544898957
+reading files and compiling image into dict of 4D images
+getting info from /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/all/general_pipeline_info.txt
+32 lines found in txt_file with : as the delimiter
+channel defined for similarity_check not recognized, so ch_0 used
+{'script_run': 'general_pipline_4D.py', 'purpose': 'preprocessing session 211104 with pipeline from 220205', 'path_to_data': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/', 'save_path': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/all/', 'model_path': '/home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/', 'output_name': '211104_brain1.2_LP40_P36.tif', 'group': '211104_brain1.2_LP40_P36', 'ch_names': ['GFP', 'red'], 'reg_subset': (0, 60, 325, 600, 300, 650), 'steps': ['compile', 'preshift', 'n2v', 'clahe', 'mask'], 'rotat_O': 6.0, 'Flip': False, 'xy_pixel': 0.0764616, 'z_pixel': 0.4, 'clipLimit': 1.0, 'kernel_size': (45, 45), 'model_name': 'n2v_3D_v6', 'reference_last': False, 'ants_ref_no': 1.0, 'ref_reset': 50.0, 'save_pre_shift': True, 'sigma': 5.0, 'drift_corr': ['Rigid', 'Affine', 'SyNRA'], 'metric': ['meansquares', 'mattes', 'CC'], 'grad_step': 0.2, 'flow_sigma': 3.0, 'total_sigma': 0.0, 'aff_sampling': 32.0, 'reg_iterations': (240, 80, 20), 'aff_iterations': (3000, 1200, 1200, 60), 'aff_shrink_factors': (6, 4, 2, 1), 'aff_smoothing_sigmas': (3, 2, 1, 0), 'check_ch': 'GFP', 'aff_random_sampling_rate': 0.2, 'syn_sampling': 32, 'ants_ref_st': 0}
+reading_text runtime 0.016257681883871555
+finished reading txt file 0.019617807120084763
+files_list runtime 0.02820457424968481
+the first 5 files (including ref) are ['/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00001.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00002.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00003.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00004.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/211104_brain1.2_LP40_P36_00005.tif']
+compiling 3D image_files into dict of 4D_images of specified channels
+compiling_files:   0%|          | 0/89 [00:00<?, ?it/s]<tifffile.TiffFile '211104_brain1.2_…0_P36_00001.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   1%|          | 1/89 [00:05<08:42,  5.94s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00002.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   2%|▏         | 2/89 [00:11<08:32,  5.89s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00003.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   3%|▎         | 3/89 [00:17<08:27,  5.90s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00004.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   4%|▍         | 4/89 [00:23<08:20,  5.89s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00005.tif'> asarray failed to reshape (170, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   6%|▌         | 5/89 [00:29<08:15,  5.90s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00006.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   7%|▋         | 6/89 [00:35<08:10,  5.91s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00007.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   8%|▊         | 7/89 [00:41<08:06,  5.93s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00008.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:   9%|▉         | 8/89 [00:47<08:01,  5.94s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00009.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  10%|█         | 9/89 [00:53<07:56,  5.95s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00010.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  11%|█         | 10/89 [00:59<07:50,  5.95s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00011.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  12%|█▏        | 11/89 [01:05<07:44,  5.95s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00012.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  13%|█▎        | 12/89 [01:11<07:39,  5.96s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00013.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  15%|█▍        | 13/89 [01:17<07:32,  5.96s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00014.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  16%|█▌        | 14/89 [01:23<07:27,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00015.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  17%|█▋        | 15/89 [01:29<07:21,  5.96s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00016.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  18%|█▊        | 16/89 [01:35<07:18,  6.01s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00017.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  19%|█▉        | 17/89 [01:41<07:11,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00018.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  20%|██        | 18/89 [01:47<07:05,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00019.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  21%|██▏       | 19/89 [01:53<07:02,  6.03s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00020.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  22%|██▏       | 20/89 [01:59<06:54,  6.01s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00021.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  24%|██▎       | 21/89 [02:05<06:47,  6.00s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00022.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  25%|██▍       | 22/89 [02:11<06:42,  6.00s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00023.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  26%|██▌       | 23/89 [02:17<06:35,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00024.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  27%|██▋       | 24/89 [02:23<06:28,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00025.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  28%|██▊       | 25/89 [02:29<06:22,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00026.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  29%|██▉       | 26/89 [02:35<06:16,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00027.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  30%|███       | 27/89 [02:41<06:09,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00028.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  31%|███▏      | 28/89 [02:47<06:04,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00029.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  33%|███▎      | 29/89 [02:52<05:58,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00030.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  34%|███▎      | 30/89 [02:58<05:52,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00031.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  35%|███▍      | 31/89 [03:04<05:46,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00032.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  36%|███▌      | 32/89 [03:10<05:40,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00033.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  37%|███▋      | 33/89 [03:16<05:34,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00034.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  38%|███▊      | 34/89 [03:23<05:33,  6.06s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00035.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  39%|███▉      | 35/89 [03:29<05:25,  6.02s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00036.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  40%|████      | 36/89 [03:35<05:18,  6.00s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00037.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  42%|████▏     | 37/89 [03:41<05:11,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00038.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  43%|████▎     | 38/89 [03:47<05:05,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00039.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  44%|████▍     | 39/89 [03:52<04:59,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00040.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  45%|████▍     | 40/89 [03:58<04:53,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00041.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  46%|████▌     | 41/89 [04:04<04:47,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00042.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  47%|████▋     | 42/89 [04:10<04:40,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00043.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  48%|████▊     | 43/89 [04:16<04:34,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00044.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  49%|████▉     | 44/89 [04:22<04:29,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00045.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  51%|█████     | 45/89 [04:28<04:23,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00046.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  52%|█████▏    | 46/89 [04:34<04:16,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00047.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  53%|█████▎    | 47/89 [04:40<04:10,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00048.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  54%|█████▍    | 48/89 [04:46<04:04,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00049.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  55%|█████▌    | 49/89 [04:52<03:59,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00050.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  56%|█████▌    | 50/89 [04:58<03:52,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00051.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  57%|█████▋    | 51/89 [05:04<03:46,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00052.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+1.1185325738042593 image new limits and type: 0 4565 uint16
+1.1087727220728993 image new limits and type: 0 1177 uint16
+split_convert runtime 2.66785738337785
+1.1067243670113385 image new limits and type: 0 4659 uint16
+1.1064947051927447 image new limits and type: 0 910 uint16
+split_convert runtime 2.6538457199931145
+1.1071391147561371 image new limits and type: 0 4782 uint16
+1.1077030133455992 image new limits and type: 0 988 uint16
+split_convert runtime 2.6552311377599835
+1.0988602018915117 image new limits and type: 0 4485 uint16
+1.0988371982239187 image new limits and type: 0 927 uint16
+split_convert runtime 2.6408532578498125
+1.0985620841383934 image new limits and type: 0 4423 uint16
+1.098526371177286 image new limits and type: 0 926 uint16
+split_convert runtime 2.637107340618968
+1.119256092235446 image new limits and type: 0 4999 uint16
+1.119950080756098 image new limits and type: 0 941 uint16
+split_convert runtime 2.6857296018861234
+1.1206587553024292 image new limits and type: 0 5024 uint16
+1.1215037731453776 image new limits and type: 0 849 uint16
+split_convert runtime 2.687884504906833
+1.1207043351605535 image new limits and type: 0 5076 uint16
+1.1207845183089375 image new limits and type: 0 1180 uint16
+split_convert runtime 2.6871190280653536
+1.1211614510975778 image new limits and type: 0 5053 uint16
+1.1205776971764863 image new limits and type: 0 853 uint16
+split_convert runtime 2.6873309100046754
+1.1209915881045163 image new limits and type: 0 4771 uint16
+1.120864164084196 image new limits and type: 0 972 uint16
+split_convert runtime 2.687643247190863
+1.121345872990787 image new limits and type: 0 5007 uint16
+1.120522890239954 image new limits and type: 0 1038 uint16
+split_convert runtime 2.6873880946077406
+1.1211469466798007 image new limits and type: 0 4655 uint16
+1.1207884699106216 image new limits and type: 0 809 uint16
+split_convert runtime 2.6875949651002884
+1.1194499880075455 image new limits and type: 0 5285 uint16
+1.1195514523424208 image new limits and type: 0 838 uint16
+split_convert runtime 2.6846354962326586
+1.1205743891187012 image new limits and type: 0 4593 uint16
+1.1202694191597402 image new limits and type: 0 1076 uint16
+split_convert runtime 2.6864723516628146
+1.1202544677071273 image new limits and type: 0 5004 uint16
+1.1202518283389509 image new limits and type: 0 1091 uint16
+split_convert runtime 2.6861470020376146
+1.1200541644357145 image new limits and type: 0 4878 uint16
+1.1201146878302097 image new limits and type: 0 947 uint16
+split_convert runtime 2.685601520817727
+1.1196500603109598 image new limits and type: 0 5436 uint16
+1.1198123060166836 image new limits and type: 0 957 uint16
+split_convert runtime 2.685357320122421
+1.1200862480327487 image new limits and type: 0 5029 uint16
+1.120060658082366 image new limits and type: 0 886 uint16
+split_convert runtime 2.685579755343497
+1.1200074101798236 image new limits and type: 0 5717 uint16
+1.1199729898944497 image new limits and type: 0 906 uint16
+split_convert runtime 2.6855113822966814
+1.1206332528963685 image new limits and type: 0 4836 uint16
+1.1200157310813665 image new limits and type: 0 1264 uint16
+split_convert runtime 2.686495745088905
+1.1191587089560926 image new limits and type: 0 4824 uint16
+1.1195671437308192 image new limits and type: 0 898 uint16
+split_convert runtime 2.684302114881575
+1.1199975307099521 image new limits and type: 0 5324 uint16
+1.1197972800582647 image new limits and type: 0 868 uint16
+split_convert runtime 2.6855795457959175
+1.1196641181595623 image new limits and type: 0 5344 uint16
+1.1209305836819112 image new limits and type: 0 943 uint16
+split_convert runtime 2.686046098358929
+1.12028440926224 image new limits and type: 0 5241 uint16
+1.1199266971088946 image new limits and type: 0 956 uint16
+split_convert runtime 2.686159204225987
+1.1208645361475646 image new limits and type: 0 4894 uint16
+1.1200478873215616 image new limits and type: 0 953 uint16
+split_convert runtime 2.6866394178941846
+1.1196466940455139 image new limits and type: 0 5383 uint16
+1.1202568071894348 image new limits and type: 0 987 uint16
+split_convert runtime 2.6858186149038374
+1.119760902132839 image new limits and type: 0 5197 uint16
+1.1200762358494103 image new limits and type: 0 1005 uint16
+split_convert runtime 2.6855491078458726
+1.1213417178951204 image new limits and type: 0 5795 uint16
+1.1214881069026887 image new limits and type: 0 918 uint16
+split_convert runtime 2.6884548286907375
+1.1209550527855754 image new limits and type: 0 5533 uint16
+1.1206170078366995 image new limits and type: 0 1004 uint16
+split_convert runtime 2.687532365322113
+1.1211387543007731 image new limits and type: 0 5472 uint16
+1.120386763010174 image new limits and type: 0 964 uint16
+split_convert runtime 2.687199644278735
+1.120725837070495 image new limits and type: 0 5792 uint16
+1.1208927729167044 image new limits and type: 0 971 uint16
+split_convert runtime 2.6873028008267283
+1.1213524239137769 image new limits and type: 0 5344 uint16
+1.1214690022170544 image new limits and type: 0 1025 uint16
+split_convert runtime 2.688241309951991
+1.1204432691447437 image new limits and type: 0 5298 uint16
+1.1202104473486543 image new limits and type: 0 939 uint16
+split_convert runtime 2.6857154984027147
+1.1208169530145824 image new limits and type: 0 5650 uint16
+1.1204255148768425 image new limits and type: 0 1229 uint16
+split_convert runtime 2.6868031709454954
+1.1203790162689984 image new limits and type: 0 5468 uint16
+1.1203845120035112 image new limits and type: 0 975 uint16
+split_convert runtime 2.686279820278287
+1.121077096555382 image new limits and type: 0 5940 uint16
+1.1216725073754787 image new limits and type: 0 984 uint16
+split_convert runtime 2.6885412870906293
+1.1208411739207804 image new limits and type: 0 5414 uint16
+1.1202994170598686 image new limits and type: 0 973 uint16
+split_convert runtime 2.6868215929716825
+1.12088444782421 image new limits and type: 0 6043 uint16
+1.121066777035594 image new limits and type: 0 1128 uint16
+split_convert runtime 2.688018408138305
+1.1200904920697212 image new limits and type: 0 5316 uint16
+1.1205478557385504 image new limits and type: 0 987 uint16
+split_convert runtime 2.6865832386538386
+1.120391434058547 image new limits and type: 0 5735 uint16
+1.1203146777115762 image new limits and type: 0 969 uint16
+split_convert runtime 2.686124496627599
+1.1204579938203096 image new limits and type: 0 6046 uint16
+1.1211823332123458 image new limits and type: 0 996 uint16
+split_convert runtime 2.6874036863446236
+1.12095570191741 image new limits and type: 0 5796 uint16
+1.1214353889226913 image new limits and type: 0 990 uint16
+split_convert runtime 2.6882074289023876
+1.1204869290813804 image new limits and type: 0 5986 uint16
+1.1206115619279444 image new limits and type: 0 1156 uint16
+split_convert runtime 2.686774027068168
+1.116468671709299 image new limits and type: 0 5784 uint16
+1.1243984196335077 image new limits and type: 0 1242 uint16
+split_convert runtime 2.687577318865806
+1.1204040511511266 image new limits and type: 0 6141 uint16
+1.1197277791798115 image new limits and type: 0 976 uint16
+split_convert runtime 2.6856280751526356
+1.1196366902440786 image new limits and type: 0 6452 uint16
+1.120011820923537 image new limits and type: 0 1059 uint16
+split_convert runtime 2.6853728611022234
+1.120109354145825 image new limits and type: 0 5613 uint16
+1.1210965584032238 image new limits and type: 0 1049 uint16
+split_convert runtime 2.686744339764118
+1.120641496963799 image new limits and type: 0 5796 uint16
+1.1213605711236596 image new limits and type: 0 1016 uint16
+split_convert runtime 2.6879155063070357
+1.1206109467893839 image new limits and type: 0 6215 uint16
+1.1220830683596432 image new limits and type: 0 1130 uint16
+split_convert runtime 2.688848305027932
+1.1206613848917186 image new limits and type: 0 6021 uint16
+1.1207971279509366 image new limits and type: 0 992 uint16
+split_convert runtime 2.6874735415913165
+1.12036655517295 image new limits and type: 0 6672 uint16
+1.1205158093944192 image new limits and type: 0 1053 uint16
+split_convert runtime 2.6868468089960515
+1.1204229788854718 image new limits and type: 0 6320 uint16
+compiling_files:  58%|█████▊    | 52/89 [05:10<03:40,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00053.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  60%|█████▉    | 53/89 [05:16<03:35,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00054.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  61%|██████    | 54/89 [05:22<03:29,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00055.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  62%|██████▏   | 55/89 [05:28<03:22,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00056.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  63%|██████▎   | 56/89 [05:34<03:17,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00057.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  64%|██████▍   | 57/89 [05:40<03:11,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00058.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  65%|██████▌   | 58/89 [05:46<03:05,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00059.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  66%|██████▋   | 59/89 [05:52<02:59,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00060.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  67%|██████▋   | 60/89 [05:58<02:53,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00061.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  69%|██████▊   | 61/89 [06:04<02:47,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00062.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  70%|██████▉   | 62/89 [06:10<02:41,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00063.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  71%|███████   | 63/89 [06:16<02:35,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00064.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  72%|███████▏  | 64/89 [06:22<02:29,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00065.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  73%|███████▎  | 65/89 [06:28<02:23,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00066.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  74%|███████▍  | 66/89 [06:34<02:17,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00067.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  75%|███████▌  | 67/89 [06:40<02:11,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00068.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  76%|███████▋  | 68/89 [06:46<02:05,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00069.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  78%|███████▊  | 69/89 [06:52<01:59,  5.96s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00070.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  79%|███████▊  | 70/89 [06:58<01:53,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00071.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  80%|███████▉  | 71/89 [07:04<01:47,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00072.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  81%|████████  | 72/89 [07:10<01:41,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00073.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  82%|████████▏ | 73/89 [07:16<01:35,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00074.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  83%|████████▎ | 74/89 [07:22<01:29,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00075.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  84%|████████▍ | 75/89 [07:28<01:23,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00076.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  85%|████████▌ | 76/89 [07:34<01:17,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00077.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  87%|████████▋ | 77/89 [07:39<01:11,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00078.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  88%|████████▊ | 78/89 [07:45<01:05,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00079.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  89%|████████▉ | 79/89 [07:51<00:59,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00080.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  90%|████████▉ | 80/89 [07:57<00:53,  5.99s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00081.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  91%|█████████ | 81/89 [08:03<00:47,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00082.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  92%|█████████▏| 82/89 [08:09<00:41,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00083.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  93%|█████████▎| 83/89 [08:15<00:35,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00084.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  94%|█████████▍| 84/89 [08:21<00:29,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00085.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  96%|█████████▌| 85/89 [08:27<00:23,  5.97s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00086.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  97%|█████████▋| 86/89 [08:33<00:17,  6.00s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00087.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  98%|█████████▊| 87/89 [08:39<00:11,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00088.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files:  99%|█████████▉| 88/89 [08:45<00:05,  5.98s/it]<tifffile.TiffFile '211104_brain1.2_…0_P36_00089.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
+compiling_files: 100%|██████████| 89/89 [08:51<00:00,  5.98s/it]compiling_files: 100%|██████████| 89/89 [08:51<00:00,  5.97s/it]1.1217171200551093 image new limits and type: 0 923 uint16
+split_convert runtime 2.6874200799502432
+1.1211223839782178 image new limits and type: 0 6116 uint16
+1.1206015353091061 image new limits and type: 0 1059 uint16
+split_convert runtime 2.687258977908641
+1.1205314411781728 image new limits and type: 0 6265 uint16
+1.1208816072903574 image new limits and type: 0 1040 uint16
+split_convert runtime 2.6871749409474432
+1.1201191698201 image new limits and type: 0 6015 uint16
+1.1210683668032289 image new limits and type: 0 1012 uint16
+split_convert runtime 2.68672163086012
+1.1208208068273962 image new limits and type: 0 6042 uint16
+1.1216122200712562 image new limits and type: 0 1199 uint16
+split_convert runtime 2.6882725562900305
+1.1203863760456443 image new limits and type: 0 6120 uint16
+1.1202471270225942 image new limits and type: 0 988 uint16
+split_convert runtime 2.686236781999469
+1.119905386120081 image new limits and type: 0 6042 uint16
+1.1201719613745809 image new limits and type: 0 980 uint16
+split_convert runtime 2.6852505980059505
+1.120233761612326 image new limits and type: 0 6340 uint16
+1.120304117910564 image new limits and type: 0 1175 uint16
+split_convert runtime 2.6863361233845353
+1.1205310681834817 image new limits and type: 0 6092 uint16
+1.121397958137095 image new limits and type: 0 993 uint16
+split_convert runtime 2.6875886796042323
+1.1200468060560524 image new limits and type: 0 5873 uint16
+1.1197366202250123 image new limits and type: 0 1209 uint16
+split_convert runtime 2.685157538857311
+1.1201345990411937 image new limits and type: 0 5907 uint16
+1.1206884030252695 image new limits and type: 0 1028 uint16
+split_convert runtime 2.686459673102945
+1.119546131696552 image new limits and type: 0 5693 uint16
+1.119641289114952 image new limits and type: 0 996 uint16
+split_convert runtime 2.684731605928391
+1.1208702302537858 image new limits and type: 0 5812 uint16
+1.120848644990474 image new limits and type: 0 955 uint16
+split_convert runtime 2.6872299811802804
+1.119788244832307 image new limits and type: 0 5619 uint16
+1.1197800179943442 image new limits and type: 0 1019 uint16
+split_convert runtime 2.6853234726004303
+1.1201350963674486 image new limits and type: 0 6000 uint16
+1.1201636008918285 image new limits and type: 0 1054 uint16
+split_convert runtime 2.685658981092274
+1.119649853091687 image new limits and type: 0 5328 uint16
+1.1199744869954884 image new limits and type: 0 1017 uint16
+split_convert runtime 2.685300000011921
+1.1199102033860981 image new limits and type: 0 5586 uint16
+1.1198133039288223 image new limits and type: 0 1012 uint16
+split_convert runtime 2.685290001798421
+1.1195546109229326 image new limits and type: 0 5914 uint16
+1.119756510015577 image new limits and type: 0 917 uint16
+split_convert runtime 2.6852674237452447
+1.1219029962085187 image new limits and type: 0 5561 uint16
+1.121914030984044 image new limits and type: 0 947 uint16
+split_convert runtime 2.6892676232382655
+1.119823002256453 image new limits and type: 0 5785 uint16
+1.1202658652327955 image new limits and type: 0 1041 uint16
+split_convert runtime 2.68568072700873
+1.1215340052731335 image new limits and type: 0 5816 uint16
+1.1210938920266926 image new limits and type: 0 1229 uint16
+split_convert runtime 2.6881431099027395
+1.1223525693640113 image new limits and type: 0 5821 uint16
+1.1209013499319553 image new limits and type: 0 950 uint16
+split_convert runtime 2.6889393548481166
+1.1211429927498102 image new limits and type: 0 6047 uint16
+1.1208300339058042 image new limits and type: 0 1002 uint16
+split_convert runtime 2.687742509879172
+1.1211932650767267 image new limits and type: 0 5605 uint16
+1.1206282060593367 image new limits and type: 0 956 uint16
+split_convert runtime 2.6874124691821635
+1.1215064297430217 image new limits and type: 0 5723 uint16
+1.1216096091084182 image new limits and type: 0 1246 uint16
+split_convert runtime 2.688533983658999
+1.1209752969443798 image new limits and type: 0 5569 uint16
+1.120467334985733 image new limits and type: 0 1076 uint16
+split_convert runtime 2.6869213050231338
+1.1206156932748854 image new limits and type: 0 5843 uint16
+1.1195524642243981 image new limits and type: 0 974 uint16
+split_convert runtime 2.685626866761595
+1.1182835479266942 image new limits and type: 0 6220 uint16
+1.1182348760776222 image new limits and type: 0 862 uint16
+split_convert runtime 2.682074284180999
+1.1188683276996017 image new limits and type: 0 5417 uint16
+1.1197866848669946 image new limits and type: 0 984 uint16
+split_convert runtime 2.6843311353586614
+1.119834401179105 image new limits and type: 0 5821 uint16
+1.1192165832035244 image new limits and type: 0 1060 uint16
+split_convert runtime 2.684481023810804
+1.1199097288772464 image new limits and type: 0 5369 uint16
+1.1201562071219087 image new limits and type: 0 970 uint16
+split_convert runtime 2.685510935727507
+1.1195590780116618 image new limits and type: 0 6073 uint16
+1.11980558373034 image new limits and type: 0 1120 uint16
+split_convert runtime 2.6850953148677945
+1.1204146733507514 image new limits and type: 0 5347 uint16
+1.1199513697065413 image new limits and type: 0 1244 uint16
+split_convert runtime 2.685977111104876
+1.119063169695437 image new limits and type: 0 5562 uint16
+1.119528638664633 image new limits and type: 0 1020 uint16
+split_convert runtime 2.684296390041709
+1.120078895241022 image new limits and type: 0 4914 uint16
+1.1195587958209217 image new limits and type: 0 1129 uint16
+split_convert runtime 2.6855329079553485
+1.1194450510665774 image new limits and type: 0 5395 uint16
+1.1196902003139257 image new limits and type: 0 1013 uint16
+split_convert runtime 2.6845947890542448
+1.1207361849956214 image new limits and type: 0 5404 uint16
+1.1197111271321774 image new limits and type: 0 1108 uint16
+split_convert runtime 2.685891824308783
+1.1205364088527858 image new limits and type: 0 5510 uint16
+1.1208178200758994 image new limits and type: 0 1092 uint16
+split_convert runtime 2.686943839304149
+dict_keys(['GFP', 'red']) <class 'list'> 89
+compiling the GFP channel
+compiling the red channel
+1.107469952199608 image new limits and type: 0 4565 uint16
+1.1066735871136189 image new limits and type: 0 4659 uint16
+1.1076045781373978 image new limits and type: 0 4782 uint16
+1.1064510527066886 image new limits and type: 0 4485 uint16
+1.1061281841248274 image new limits and type: 0 4423 uint16
+1.1067208889871836 image new limits and type: 0 4999 uint16
+1.1070813979022205 image new limits and type: 0 5024 uint16
+1.1063316049985588 image new limits and type: 0 5076 uint16
+1.1065454501658678 image new limits and type: 0 5053 uint16
+1.107312347739935 image new limits and type: 0 4771 uint16
+1.106668246909976 image new limits and type: 0 5007 uint16
+1.1066525359638035 image new limits and type: 0 4655 uint16
+1.1076863529160619 image new limits and type: 0 5285 uint16
+1.1070584538392723 image new limits and type: 0 4593 uint16
+1.1073624547570944 image new limits and type: 0 5004 uint16
+1.1063748789019883 image new limits and type: 0 4878 uint16
+1.1068053347989917 image new limits and type: 0 5432 uint16
+1.10789625486359 image new limits and type: 0 5029 uint16
+1.1069744303822517 image new limits and type: 0 5717 uint16
+1.1070500849746168 image new limits and type: 0 4836 uint16
+1.1066888286732137 image new limits and type: 0 4824 uint16
+1.1069479500874877 image new limits and type: 0 5324 uint16
+1.1068444550037384 image new limits and type: 0 5344 uint16
+1.1070800069719553 image new limits and type: 0 5241 uint16
+1.106910739094019 image new limits and type: 0 4894 uint16
+1.1068946551531553 image new limits and type: 0 5383 uint16
+1.1068656905554235 image new limits and type: 0 5197 uint16
+1.106466324068606 image new limits and type: 0 5795 uint16
+1.1069132057018578 image new limits and type: 0 5533 uint16
+1.1063707321882248 image new limits and type: 0 5472 uint16
+1.107112071942538 image new limits and type: 0 5792 uint16
+1.107108490075916 image new limits and type: 0 5344 uint16
+1.10699093202129 image new limits and type: 0 5298 uint16
+1.1069520357996225 image new limits and type: 0 5650 uint16
+1.1065219659358263 image new limits and type: 0 5468 uint16
+1.107053928077221 image new limits and type: 0 5229 uint16
+1.107248259242624 image new limits and type: 0 5414 uint16
+1.1071615712717175 image new limits and type: 0 6043 uint16
+1.1074677198193967 image new limits and type: 0 5316 uint16
+1.1065723481588066 image new limits and type: 0 5735 uint16
+1.1072792168706656 image new limits and type: 0 6046 uint16
+1.1067397049628198 image new limits and type: 0 5796 uint16
+1.107449907809496 image new limits and type: 0 5986 uint16
+1.1065705702640116 image new limits and type: 0 5784 uint16
+1.1068446333520114 image new limits and type: 0 6141 uint16
+1.1068647727370262 image new limits and type: 0 6452 uint16
+1.1072067078202963 image new limits and type: 0 5613 uint16
+1.1065182443708181 image new limits and type: 0 5796 uint16
+1.1067064860835671 image new limits and type: 0 6215 uint16
+1.107360358349979 image new limits and type: 0 6021 uint16
+1.1070146574638784 image new limits and type: 0 6037 uint16
+1.1069594421423972 image new limits and type: 0 6320 uint16
+1.1067812601104379 image new limits and type: 0 6116 uint16
+1.1063311151228845 image new limits and type: 0 6265 uint16
+1.1069358503445983 image new limits and type: 0 6015 uint16
+1.1067445226944983 image new limits and type: 0 6042 uint16
+1.1070498549379408 image new limits and type: 0 6120 uint16
+1.1063116760924459 image new limits and type: 0 6042 uint16
+1.107209709007293 image new limits and type: 0 6340 uint16
+1.1069410596974194 image new limits and type: 0 5606 uint16
+1.1069405786693096 image new limits and type: 0 5763 uint16
+1.107096812222153 image new limits and type: 0 5790 uint16
+1.1062719328328967 image new limits and type: 0 5639 uint16
+1.106868932954967 image new limits and type: 0 5812 uint16
+1.106607639696449 image new limits and type: 0 5619 uint16
+1.1070909299887717 image new limits and type: 0 6000 uint16
+1.1064204219728708 image new limits and type: 0 5328 uint16
+1.1063679652288556 image new limits and type: 0 5586 uint16
+1.1065841810777783 image new limits and type: 0 5914 uint16
+1.1069703996181488 image new limits and type: 0 5561 uint16
+1.1065769060514867 image new limits and type: 0 5785 uint16
+1.1070412672124803 image new limits and type: 0 5553 uint16
+1.1074126400053501 image new limits and type: 0 5821 uint16
+1.1070510428398848 image new limits and type: 0 6047 uint16
+1.107276473660022 image new limits and type: 0 5605 uint16
+1.107028303667903 image new limits and type: 0 5723 uint16
+1.106719578616321 image new limits and type: 0 5569 uint16
+1.1076843640767038 image new limits and type: 0 5843 uint16
+1.106831266079098 image new limits and type: 0 6220 uint16
+1.1076833843253553 image new limits and type: 0 5417 uint16
+1.1070379503071308 image new limits and type: 0 5821 uint16
+1.107254953123629 image new limits and type: 0 5369 uint16
+1.1068498808890581 image new limits and type: 0 6073 uint16
+1.1071755117736757 image new limits and type: 0 5347 uint16
+1.107966142706573 image new limits and type: 0 5562 uint16
+1.1069328649900854 image new limits and type: 0 4914 uint16
+1.1075921659357846 image new limits and type: 0 5395 uint16
+1.1072777858935297 image new limits and type: 0 5404 uint16
+1.1069968650117517 image new limits and type: 0 5510 uint16
+1.1024177419021726 image new limits and type: 0 1177 uint16
+1.1051102969795465 image new limits and type: 0 910 uint16
+1.1049947952851653 image new limits and type: 0 988 uint16
+1.104793684091419 image new limits and type: 0 927 uint16
+1.1055896477773786 image new limits and type: 0 926 uint16
+1.1053640730679035 image new limits and type: 0 941 uint16
+1.105394996702671 image new limits and type: 0 849 uint16
+1.1054729325696826 image new limits and type: 0 1180 uint16
+1.104997029993683 image new limits and type: 0 853 uint16
+1.105644176248461 image new limits and type: 0 972 uint16
+1.105853368062526 image new limits and type: 0 1038 uint16
+1.1057929652743042 image new limits and type: 0 809 uint16
+1.1064616688527167 image new limits and type: 0 838 uint16
+1.105318260844797 image new limits and type: 0 1076 uint16
+1.1069847699254751 image new limits and type: 0 1091 uint16
+1.1052037649787962 image new limits and type: 0 947 uint16
+1.1048957710154355 image new limits and type: 0 957 uint16
+1.1055519739165902 image new limits and type: 0 886 uint16
+1.104916397947818 image new limits and type: 0 906 uint16
+1.105540124233812 image new limits and type: 0 1264 uint16
+1.1048822337761521 image new limits and type: 0 898 uint16
+1.105140910949558 image new limits and type: 0 868 uint16
+1.1054521421901882 image new limits and type: 0 943 uint16
+1.1053414903581142 image new limits and type: 0 956 uint16
+1.1056447862647474 image new limits and type: 0 953 uint16
+1.105085494928062 image new limits and type: 0 987 uint16
+1.1053555528633296 image new limits and type: 0 1005 uint16
+1.1061714510433376 image new limits and type: 0 918 uint16
+1.100669083185494 image new limits and type: 0 1004 uint16
+1.1013297708705068 image new limits and type: 0 964 uint16
+1.1008911607787013 image new limits and type: 0 971 uint16
+1.1011932250112295 image new limits and type: 0 1025 uint16
+1.1007856568321586 image new limits and type: 0 939 uint16
+1.1009071432054043 image new limits and type: 0 1229 uint16
+1.101285104174167 image new limits and type: 0 975 uint16
+1.101277206093073 image new limits and type: 0 984 uint16
+1.1051423070020974 image new limits and type: 0 973 uint16
+1.1048424481414258 image new limits and type: 0 1128 uint16
+1.105093866121024 image new limits and type: 0 987 uint16
+1.1058907420374453 image new limits and type: 0 969 uint16
+1.1049656923860312 image new limits and type: 0 996 uint16
+1.104558466002345 image new limits and type: 0 990 uint16
+1.0998278721235693 image new limits and type: 0 1156 uint16
+1.1005775108933449 image new limits and type: 0 1242 uint16
+1.1010489659383893 image new limits and type: 0 976 uint16
+1.1005796459503472 image new limits and type: 0 1059 uint16
+1.1005904525518417 image new limits and type: 0 1049 uint16
+1.10050859907642 image new limits and type: 0 1016 uint16
+1.1009048433043063 image new limits and type: 0 1130 uint16
+1.1005905326455832 image new limits and type: 0 992 uint16
+1.10041514178738 image new limits and type: 0 1053 uint16
+1.1007004440762103 image new limits and type: 0 923 uint16
+1.100548218935728 image new limits and type: 0 1059 uint16
+1.1007305500097573 image new limits and type: 0 1040 uint16
+1.1004977221600711 image new limits and type: 0 1012 uint16
+1.1006440119817853 image new limits and type: 0 1199 uint16
+1.1011844160966575 image new limits and type: 0 988 uint16
+1.1008533649146557 image new limits and type: 0 980 uint16
+1.10033207712695 image new limits and type: 0 1175 uint16
+1.1009433921426535 image new limits and type: 0 993 uint16
+1.1007806127890944 image new limits and type: 0 1209 uint16
+1.1006261259317398 image new limits and type: 0 1028 uint16
+1.100795490667224 image new limits and type: 0 996 uint16
+1.1003667549230158 image new limits and type: 0 955 uint16
+1.100743887014687 image new limits and type: 0 1019 uint16
+1.100547630339861 image new limits and type: 0 1054 uint16
+1.1003554472699761 image new limits and type: 0 1017 uint16
+1.100803756620735 image new limits and type: 0 1012 uint16
+1.1006700112484396 image new limits and type: 0 917 uint16
+1.1010050065815449 image new limits and type: 0 947 uint16
+1.1000408600084484 image new limits and type: 0 1041 uint16
+1.1007908447645605 image new limits and type: 0 1229 uint16
+1.1003549438901246 image new limits and type: 0 950 uint16
+1.1008999259211123 image new limits and type: 0 1002 uint16
+1.100594798102975 image new limits and type: 0 956 uint16
+1.1005601808428764 image new limits and type: 0 1246 uint16
+1.1001010318286717 image new limits and type: 0 1076 uint16
+1.1004416639916599 image new limits and type: 0 974 uint16
+1.1006330521777272 image new limits and type: 0 862 uint16
+1.1011234279721975 image new limits and type: 0 984 uint16
+1.1014671362936497 image new limits and type: 0 1060 uint16
+1.1004331200383604 image new limits and type: 0 970 uint16
+1.1009634579531848 image new limits and type: 0 1120 uint16
+1.1007754439488053 image new limits and type: 0 1244 uint16
+1.100485528819263 image new limits and type: 0 1020 uint16
+1.100542578380555 image new limits and type: 0 1129 uint16
+1.100161727052182 image new limits and type: 0 1013 uint16
+1.100243838969618 image new limits and type: 0 1108 uint16
+1.1002591159194708 image new limits and type: 0 1092 uint16
+files_to_4D runtime 1067.6440666490234
+finished reading and compiling images 1068.199184620753
+applying preshift
+initial shift of 0 [0, 0, 0]
+88 (85, 1024, 1024)
+applying phase correlation
+[ -1.  -7. -12.] [-1.0, -7.0, -12.0]
+applying preshift on timepoint 1 with current pre_shift [-1.0, -7.0, -12.0]
+applying phase correlation
+[  0.   2. -18.] [-1.0, -5.0, -30.0]
+applying preshift on timepoint 2 with current pre_shift [-1.0, -5.0, -30.0]
+applying phase correlation
+[ 2. -1. -4.] [1.0, -6.0, -34.0]
+applying preshift on timepoint 3 with current pre_shift [1.0, -6.0, -34.0]
+applying phase correlation
+[ 0.  1. -5.] [1.0, -5.0, -39.0]
+applying preshift on timepoint 4 with current pre_shift [1.0, -5.0, -39.0]
+applying phase correlation
+[ 3. 86. 58.] [4.0, 81.0, 19.0]
+applying preshift on timepoint 5 with current pre_shift [4.0, 81.0, 19.0]
+applying phase correlation
+[ 1. -3. -8.] [5.0, 78.0, 11.0]
+applying preshift on timepoint 6 with current pre_shift [5.0, 78.0, 11.0]
+applying phase correlation
+[  1.  -3. -13.] [6.0, 75.0, -2.0]
+applying preshift on timepoint 7 with current pre_shift [6.0, 75.0, -2.0]
+applying phase correlation
+[ 0.  0. -5.] [6.0, 75.0, -7.0]
+applying preshift on timepoint 8 with current pre_shift [6.0, 75.0, -7.0]
+applying phase correlation
+[ 0. -2. -1.] [6.0, 73.0, -8.0]
+applying preshift on timepoint 9 with current pre_shift [6.0, 73.0, -8.0]
+applying phase correlation
+[ 0. -4. -4.] [6.0, 69.0, -12.0]
+applying preshift on timepoint 10 with current pre_shift [6.0, 69.0, -12.0]
+applying phase correlation
+[0. 4. 0.] [6.0, 73.0, -12.0]
+applying preshift on timepoint 11 with current pre_shift [6.0, 73.0, -12.0]
+applying phase correlation
+[ 0. -1.  2.] [6.0, 72.0, -10.0]
+applying preshift on timepoint 12 with current pre_shift [6.0, 72.0, -10.0]
+applying phase correlation
+[ 0. -5. -4.] [6.0, 67.0, -14.0]
+applying preshift on timepoint 13 with current pre_shift [6.0, 67.0, -14.0]
+applying phase correlation
+[ 0. -2.  1.] [6.0, 65.0, -13.0]
+applying preshift on timepoint 14 with current pre_shift [6.0, 65.0, -13.0]
+applying phase correlation
+[-7.  0. 16.] [-1.0, 65.0, 3.0]
+applying preshift on timepoint 15 with current pre_shift [-1.0, 65.0, 3.0]
+applying phase correlation
+[0. 2. 3.] [-1.0, 67.0, 6.0]
+applying preshift on timepoint 16 with current pre_shift [-1.0, 67.0, 6.0]
+applying phase correlation
+[ 0. -4. -4.] [-1.0, 63.0, 2.0]
+applying preshift on timepoint 17 with current pre_shift [-1.0, 63.0, 2.0]
+applying phase correlation
+[ 0. -1. -1.] [-1.0, 62.0, 1.0]
+applying preshift on timepoint 18 with current pre_shift [-1.0, 62.0, 1.0]
+applying phase correlation
+[0. 1. 1.] [-1.0, 63.0, 2.0]
+applying preshift on timepoint 19 with current pre_shift [-1.0, 63.0, 2.0]
+applying phase correlation
+[0. 0. 1.] [-1.0, 63.0, 3.0]
+applying preshift on timepoint 20 with current pre_shift [-1.0, 63.0, 3.0]
+applying phase correlation
+[ 0. -7.  1.] [-1.0, 56.0, 4.0]
+applying preshift on timepoint 21 with current pre_shift [-1.0, 56.0, 4.0]
+applying phase correlation
+[0. 2. 1.] [-1.0, 58.0, 5.0]
+applying preshift on timepoint 22 with current pre_shift [-1.0, 58.0, 5.0]
+applying phase correlation
+[0. 2. 1.] [-1.0, 60.0, 6.0]
+applying preshift on timepoint 23 with current pre_shift [-1.0, 60.0, 6.0]
+applying phase correlation
+[ 0. -8.  0.] [-1.0, 52.0, 6.0]
+applying preshift on timepoint 24 with current pre_shift [-1.0, 52.0, 6.0]
+applying phase correlation
+[ 0. -3.  0.] [-1.0, 49.0, 6.0]
+applying preshift on timepoint 25 with current pre_shift [-1.0, 49.0, 6.0]
+applying phase correlation
+[0. 4. 0.] [-1.0, 53.0, 6.0]
+applying preshift on timepoint 26 with current pre_shift [-1.0, 53.0, 6.0]
+applying phase correlation
+[ 0. -1.  0.] [-1.0, 52.0, 6.0]
+applying preshift on timepoint 27 with current pre_shift [-1.0, 52.0, 6.0]
+applying phase correlation
+[ 0. -4. -1.] [-1.0, 48.0, 5.0]
+applying preshift on timepoint 28 with current pre_shift [-1.0, 48.0, 5.0]
+applying phase correlation
+[0. 0. 0.] [-1.0, 48.0, 5.0]
+applying preshift on timepoint 29 with current pre_shift [-1.0, 48.0, 5.0]
+applying phase correlation
+[0. 3. 0.] [-1.0, 51.0, 5.0]
+applying preshift on timepoint 30 with current pre_shift [-1.0, 51.0, 5.0]
+applying phase correlation
+[ 0. -4. -3.] [-1.0, 47.0, 2.0]
+applying preshift on timepoint 31 with current pre_shift [-1.0, 47.0, 2.0]
+applying phase correlation
+[ 0.  0. -2.] [-1.0, 47.0, 0.0]
+applying preshift on timepoint 32 with current pre_shift [-1.0, 47.0, 0.0]
+applying phase correlation
+[-1.  8. -5.] [-2.0, 55.0, -5.0]
+applying preshift on timepoint 33 with current pre_shift [-2.0, 55.0, -5.0]
+applying phase correlation
+[ 0.  3. -1.] [-2.0, 58.0, -6.0]
+applying preshift on timepoint 34 with current pre_shift [-2.0, 58.0, -6.0]
+applying phase correlation
+[ 0. -4. -1.] [-2.0, 54.0, -7.0]
+applying preshift on timepoint 35 with current pre_shift [-2.0, 54.0, -7.0]
+applying phase correlation
+[0. 1. 2.] [-2.0, 55.0, -5.0]
+applying preshift on timepoint 36 with current pre_shift [-2.0, 55.0, -5.0]
+applying phase correlation
+[ 0. -3.  3.] [-2.0, 52.0, -2.0]
+applying preshift on timepoint 37 with current pre_shift [-2.0, 52.0, -2.0]
+applying phase correlation
+[ 0. -3.  0.] [-2.0, 49.0, -2.0]
+applying preshift on timepoint 38 with current pre_shift [-2.0, 49.0, -2.0]
+applying phase correlation
+[ 0. -3. -1.] [-2.0, 46.0, -3.0]
+applying preshift on timepoint 39 with current pre_shift [-2.0, 46.0, -3.0]
+applying phase correlation
+[0. 2. 5.] [-2.0, 48.0, 2.0]
+applying preshift on timepoint 40 with current pre_shift [-2.0, 48.0, 2.0]
+applying phase correlation
+[ 0. -3.  0.] [-2.0, 45.0, 2.0]
+applying preshift on timepoint 41 with current pre_shift [-2.0, 45.0, 2.0]
+applying phase correlation
+[ 0. -5.  0.] [-2.0, 40.0, 2.0]
+applying preshift on timepoint 42 with current pre_shift [-2.0, 40.0, 2.0]
+applying phase correlation
+[0. 3. 5.] [-2.0, 43.0, 7.0]
+applying preshift on timepoint 43 with current pre_shift [-2.0, 43.0, 7.0]
+applying phase correlation
+[0. 2. 2.] [-2.0, 45.0, 9.0]
+applying preshift on timepoint 44 with current pre_shift [-2.0, 45.0, 9.0]
+applying phase correlation
+[ 0. -5.  2.] [-2.0, 40.0, 11.0]
+applying preshift on timepoint 45 with current pre_shift [-2.0, 40.0, 11.0]
+applying phase correlation
+[0. 2. 2.] [-2.0, 42.0, 13.0]
+applying preshift on timepoint 46 with current pre_shift [-2.0, 42.0, 13.0]
+applying phase correlation
+[0. 2. 3.] [-2.0, 44.0, 16.0]
+applying preshift on timepoint 47 with current pre_shift [-2.0, 44.0, 16.0]
+applying phase correlation
+[0. 0. 4.] [-2.0, 44.0, 20.0]
+applying preshift on timepoint 48 with current pre_shift [-2.0, 44.0, 20.0]
+applying phase correlation
+[ 0. -6.  1.] [-2.0, 38.0, 21.0]
+applying preshift on timepoint 49 with current pre_shift [-2.0, 38.0, 21.0]
+applying phase correlation
+[0. 4. 6.] [-2.0, 42.0, 27.0]
+applying preshift on timepoint 50 with current pre_shift [-2.0, 42.0, 27.0]
+applying phase correlation
+[0. 2. 3.] [-2.0, 44.0, 30.0]
+applying preshift on timepoint 51 with current pre_shift [-2.0, 44.0, 30.0]
+applying phase correlation
+[ 0. -3. -2.] [-2.0, 41.0, 28.0]
+applying preshift on timepoint 52 with current pre_shift [-2.0, 41.0, 28.0]
+applying phase correlation
+[0. 2. 1.] [-2.0, 43.0, 29.0]
+applying preshift on timepoint 53 with current pre_shift [-2.0, 43.0, 29.0]
+applying phase correlation
+[0. 8. 6.] [-2.0, 51.0, 35.0]
+applying preshift on timepoint 54 with current pre_shift [-2.0, 51.0, 35.0]
+applying phase correlation
+[ 0. -1. -1.] [-2.0, 50.0, 34.0]
+applying preshift on timepoint 55 with current pre_shift [-2.0, 50.0, 34.0]
+applying phase correlation
+[ 0. -1.  2.] [-2.0, 49.0, 36.0]
+applying preshift on timepoint 56 with current pre_shift [-2.0, 49.0, 36.0]
+applying phase correlation
+[0. 1. 0.] [-2.0, 50.0, 36.0]
+applying preshift on timepoint 57 with current pre_shift [-2.0, 50.0, 36.0]
+applying phase correlation
+[0. 4. 5.] [-2.0, 54.0, 41.0]
+applying preshift on timepoint 58 
+/usr/users/aicha.hajiali/.conda/envs/preprocessing/lib/python3.8/site-packages/tifffile/tifffile.py:2876: UserWarning:
+
+<tifffile.TiffWriter '4D_GFP_raw_2111…1.2_LP40_P36.tif'> truncating ImageJ file
+
+/usr/users/aicha.hajiali/.conda/envs/preprocessing/lib/python3.8/site-packages/tifffile/tifffile.py:2876: UserWarning:
+
+<tifffile.TiffWriter '4D_red_raw_2111…1.2_LP40_P36.tif'> truncating ImageJ file
+
+/usr/users/aicha.hajiali/.conda/envs/preprocessing/lib/python3.8/site-packages/tifffile/tifffile.py:2876: UserWarning:
+
+<tifffile.TiffWriter 'PhaseCorr_GFP_21….2_LP40_P36.tif'> truncating ImageJ file
+
+/usr/users/aicha.hajiali/.conda/envs/preprocessing/lib/python3.8/site-packages/tifffile/tifffile.py:2876: UserWarning:
+
+<tifffile.TiffWriter 'PhaseCorr_red_21….2_LP40_P36.tif'> truncating ImageJ file
+
+with current pre_shift [-2.0, 54.0, 41.0]
+applying phase correlation
+[ 0. -3.  2.] [-2.0, 51.0, 43.0]
+applying preshift on timepoint 59 with current pre_shift [-2.0, 51.0, 43.0]
+applying phase correlation
+[0. 4. 1.] [-2.0, 55.0, 44.0]
+applying preshift on timepoint 60 with current pre_shift [-2.0, 55.0, 44.0]
+applying phase correlation
+[0. 7. 5.] [-2.0, 62.0, 49.0]
+applying preshift on timepoint 61 with current pre_shift [-2.0, 62.0, 49.0]
+applying phase correlation
+[0. 0. 1.] [-2.0, 62.0, 50.0]
+applying preshift on timepoint 62 with current pre_shift [-2.0, 62.0, 50.0]
+applying phase correlation
+[ 0. -1.  0.] [-2.0, 61.0, 50.0]
+applying preshift on timepoint 63 with current pre_shift [-2.0, 61.0, 50.0]
+applying phase correlation
+[0. 6. 8.] [-2.0, 67.0, 58.0]
+applying preshift on timepoint 64 with current pre_shift [-2.0, 67.0, 58.0]
+applying phase correlation
+[0. 1. 1.] [-2.0, 68.0, 59.0]
+applying preshift on timepoint 65 with current pre_shift [-2.0, 68.0, 59.0]
+applying phase correlation
+[ 0. -2. -1.] [-2.0, 66.0, 58.0]
+applying preshift on timepoint 66 with current pre_shift [-2.0, 66.0, 58.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 69.0, 58.0]
+applying preshift on timepoint 67 with current pre_shift [-2.0, 69.0, 58.0]
+applying phase correlation
+[0. 8. 3.] [-2.0, 77.0, 61.0]
+applying preshift on timepoint 68 with current pre_shift [-2.0, 77.0, 61.0]
+applying phase correlation
+[0. 0. 0.] [-2.0, 77.0, 61.0]
+applying preshift on timepoint 69 with current pre_shift [-2.0, 77.0, 61.0]
+applying phase correlation
+[0. 1. 0.] [-2.0, 78.0, 61.0]
+applying preshift on timepoint 70 with current pre_shift [-2.0, 78.0, 61.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 81.0, 61.0]
+applying preshift on timepoint 71 with current pre_shift [-2.0, 81.0, 61.0]
+applying phase correlation
+[0. 6. 3.] [-2.0, 87.0, 64.0]
+applying preshift on timepoint 72 with current pre_shift [-2.0, 87.0, 64.0]
+applying phase correlation
+[ 0. -2. -3.] [-2.0, 85.0, 61.0]
+applying preshift on timepoint 73 with current pre_shift [-2.0, 85.0, 61.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 88.0, 61.0]
+applying preshift on timepoint 74 with current pre_shift [-2.0, 88.0, 61.0]
+applying phase correlation
+[0. 6. 4.] [-2.0, 94.0, 65.0]
+applying preshift on timepoint 75 with current pre_shift [-2.0, 94.0, 65.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 97.0, 65.0]
+applying preshift on timepoint 76 with current pre_shift [-2.0, 97.0, 65.0]
+applying phase correlation
+[0. 0. 0.] [-2.0, 97.0, 65.0]
+applying preshift on timepoint 77 with current pre_shift [-2.0, 97.0, 65.0]
+applying phase correlation
+[0. 7. 3.] [-2.0, 104.0, 68.0]
+applying preshift on timepoint 78 with current pre_shift [-2.0, 104.0, 68.0]
+applying phase correlation
+[0. 6. 0.] [-2.0, 110.0, 68.0]
+applying preshift on timepoint 79 with current pre_shift [-2.0, 110.0, 68.0]
+applying phase correlation
+[0. 1. 0.] [-2.0, 111.0, 68.0]
+applying preshift on timepoint 80 with current pre_shift [-2.0, 111.0, 68.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 114.0, 68.0]
+applying preshift on timepoint 81 with current pre_shift [-2.0, 114.0, 68.0]
+applying phase correlation
+[0. 9. 0.] [-2.0, 123.0, 68.0]
+applying preshift on timepoint 82 with current pre_shift [-2.0, 123.0, 68.0]
+applying phase correlation
+[0. 1. 0.] [-2.0, 124.0, 68.0]
+applying preshift on timepoint 83 with current pre_shift [-2.0, 124.0, 68.0]
+applying phase correlation
+[ 0.  1. -3.] [-2.0, 125.0, 65.0]
+applying preshift on timepoint 84 with current pre_shift [-2.0, 125.0, 65.0]
+applying phase correlation
+[ 0. 11.  2.] [-2.0, 136.0, 67.0]
+applying preshift on timepoint 85 with current pre_shift [-2.0, 136.0, 67.0]
+applying phase correlation
+[0. 3. 0.] [-2.0, 139.0, 67.0]
+applying preshift on timepoint 86 with current pre_shift [-2.0, 139.0, 67.0]
+applying phase correlation
+[ 0.  0. -3.] [-2.0, 139.0, 64.0]
+applying preshift on timepoint 87 with current pre_shift [-2.0, 139.0, 64.0]
+applying phase correlation
+[0. 6. 0.] [-2.0, 145.0, 64.0]
+applying preshift on timepoint 88 with current pre_shift [-2.0, 145.0, 64.0]
+finished applying preshift 11966.999778368045
+cosine_sim for timepoint:   0%|          | 0/88 [00:00<?, ?it/s]cosine_sim for timepoint:   0%|          | 0/88 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/mpg08/aicha.hajiali/TLI_project/preprocessing/pipeline/scripts/general_pipeline_4D.py", line 1074, in <module>
+    
+  File "/home/mpg08/aicha.hajiali/TLI_project/preprocessing/pipeline/scripts/general_pipeline_4D.py", line 892, in main
+    print('finished applying preshift', timer()-start_time)
+  File "/home/mpg08/aicha.hajiali/TLI_project/preprocessing/pipeline/scripts/general_pipeline_4D.py", line 343, in similarity_4D
+    for t in tqdm(image_4D[1:], desc='cosine_sim for timepoint'):
+numpy.core._exceptions.MemoryError: Unable to allocate 14.1 PiB for an array with shape (85, 1024, 1024, 85, 1024, 1024) and data type uint16
+python died with exit status 1
+============ Job Information ===================================================
+Submitted: 2022-02-06T09:10:55
+Started: 2022-02-06T09:11:09
+Ended: 2022-02-06T12:49:27
+Elapsed: 219 min, Limit: 2820 min, Difference: 2601 min
+CPUs: 24, Nodes: 1
+============= ProfiT-HPC =======================================================
+To generate the ProfiT-HPC text report, run the following command
+profit-hpc 11141133
+================================================================================

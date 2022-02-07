@@ -943,19 +943,19 @@ def main():
     ###### applying Ants registration based on the last (red) channel
     if 'ants' in input_txt['steps']:
         start_time = timer()
-        # ref_t = input_txt['ants_ref_st']
-        # if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
-        #     ref_t = 0
-        # ants_shifts = {}
-        # for i in tqdm(np.arange(input_txt['drift_corr'])):
-        #     drift_t = input_txt['drift_corr'][i]
-        #     ants_step = str(i+1)+'_'+drift_t
-        #     try:
-        #         metric_t = input_txt['metric'][i]
-        #     except:
-        #         for i in [0]:
-        #             print('optimization metric not recognized. mattes used instead')
-        #             metric_t = 'mattes'
+        ref_t = input_txt['ants_ref_st']
+        if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
+            ref_t = 0
+        ants_shifts = {}
+        for i in tqdm(np.arange(input_txt['drift_corr'])):
+            drift_t = input_txt['drift_corr'][i]
+            ants_step = str(i+1)+'_'+drift_t
+            try:
+                metric_t = input_txt['metric'][i]
+            except:
+                for i in [0]:
+                    print('optimization metric not recognized. mattes used instead')
+                    metric_t = 'mattes'
         #     image_4D, ants_shifts[ants_step] = apply_ants_4D(image_4D, 
         #                                                     drift_corr=drift_t,  
         #                                                     xy_pixel=input_txt['xy_pixel'], 
