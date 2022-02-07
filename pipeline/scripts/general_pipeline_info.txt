@@ -3,21 +3,21 @@ script_run: general_pipline_4D.py
 purpose: preprocessing session 211104 with pipeline from 220205
 
 ### provided paths: data_path, saving_path and n2v model path
-path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/all/
+path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
 ### basename of output tiff files
-output_name: 211104_brain1.2_LP40_P36.tif
+output_name: 211120_brain2.2_LP40_P38.45.tif
 
 ### data filtering parameters: name(group), channel names,subset
-group: 211104_brain1.2_LP40_P36
+group: 211120_brain2.2_LP40_P38.45_0
 ch_names: GFP, red  ## if the images has one channel then also specify here (e.g:GFP)
 reg_subset: 0,60,325,600,300,650  ##Z,Y,X slicing. In case no subset required, type 0,0
 # reg_subset is not used in current 4D_pipeline
 
 ### preprocessing steps to apply
-steps: compile, preshift, n2v, clahe, mask
+steps: compile, ants
 #all means ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
 
 ### rotation and image_flip (not implemented yet)
