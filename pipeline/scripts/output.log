@@ -1,120 +1,0 @@
-Log of python /home/mpg08/aicha.hajiali/TLI_project/preprocessing/pipeline/scripts/general_pipeline_4D.py /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run2/general_pipeline_info.txt 
-Mon Feb  7 09:48:12 2022
-
-2022-02-07 09:48:19.958564: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 09:48:19.958623: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
-pipeline start 3884404.522784485
-finished loading packages 59.6440227269195
-reading files and compiling image into dict of 4D images
-getting info from /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run2/general_pipeline_info.txt
-32 lines found in txt_file with : as the delimiter
-channel defined for similarity_check not recognized, so ch_0 used
-{'script_run': 'general_pipline_4D.py', 'purpose': 'preprocessing session 211104 with pipeline from 220205', 'path_to_data': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/', 'save_path': '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/test_run2/', 'model_path': '/home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/', 'output_name': '211120_brain2.2_LP40_P38.45.tif', 'group': '211120_brain2.2_LP40_P38.45_0', 'ch_names': ['GFP', 'red'], 'reg_subset': (0, 60, 325, 600, 300, 650), 'steps': ['compile', 'preshift', 'n2v', 'clahe', 'mask', 'ants', 'postshift'], 'rotat_O': 6.0, 'Flip': False, 'xy_pixel': 0.0764616, 'z_pixel': 0.4, 'clipLimit': 1.0, 'kernel_size': (45, 45), 'model_name': 'n2v_3D_v6', 'reference_last': False, 'ants_ref_no': 1.0, 'ref_reset': 50.0, 'save_pre_shift': True, 'sigma': 5.0, 'drift_corr': ['Rigid', 'Affine', 'SyNRA'], 'metric': ['meansquares', 'mattes', 'CC'], 'grad_step': 0.2, 'flow_sigma': 3.0, 'total_sigma': 0.0, 'aff_sampling': 32.0, 'reg_iterations': (240, 80, 20), 'aff_iterations': (3000, 1200, 1200, 60), 'aff_shrink_factors': (6, 4, 2, 1), 'aff_smoothing_sigmas': (3, 2, 1, 0), 'check_ch': 'GFP', 'aff_random_sampling_rate': 0.2, 'syn_sampling': 32, 'ants_ref_st': 0}
-reading_text runtime 0.0022171959280967712
-finished reading txt file 0.006180597003549337
-files_list runtime 0.0048302048817276955
-the first 5 files (including ref) are ['/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/211120_brain2.2_LP40_P38.45_00001.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/211120_brain2.2_LP40_P38.45_00002.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/211120_brain2.2_LP40_P38.45_00003.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/211120_brain2.2_LP40_P38.45_00004.tif', '/home/mpg08/aicha.hajiali/TLI_project/TLI_data/test_run/211120_brain2.2_LP40_P38.45_00005.tif']
-compiling 3D image_files into dict of 4D_images of specified channels
-compiling_files:   0%|          | 0/11 [00:00<?, ?it/s]<tifffile.TiffFile '211120_brain2.2…P38.45_00001.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:   9%|▉         | 1/11 [00:06<01:00,  6.04s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00002.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  18%|█▊        | 2/11 [00:11<00:53,  5.98s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00003.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  27%|██▋       | 3/11 [00:17<00:47,  5.99s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00004.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  36%|███▋      | 4/11 [00:23<00:41,  5.99s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00005.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  45%|████▌     | 5/11 [00:29<00:35,  5.98s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00006.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  55%|█████▍    | 6/11 [00:35<00:29,  5.98s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00007.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  64%|██████▎   | 7/11 [00:41<00:23,  5.97s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00008.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  73%|███████▎  | 8/11 [00:47<00:17,  5.97s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00009.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  82%|████████▏ | 9/11 [00:53<00:11,  5.96s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00010.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files:  91%|█████████ | 10/11 [00:59<00:05,  5.95s/it]<tifffile.TiffFile '211120_brain2.2…P38.45_00011.tif'> asarray failed to reshape (172, 1024, 1024) to (8, 10, 2, 1024, 1024)
-compiling_files: 100%|██████████| 11/11 [01:05<00:00,  5.95s/it]compiling_files: 100%|██████████| 11/11 [01:05<00:00,  5.97s/it]
-1.15053842170164 image new limits and type: 0 5344 uint16
-1.120216618757695 image new limits and type: 0 1180 uint16
-split_convert runtime 2.718281696550548
-1.1155192931182683 image new limits and type: 0 4992 uint16
-1.1154182883910835 image new limits and type: 0 1093 uint16
-split_convert runtime 2.678481839131564
-1.1155300671234727 image new limits and type: 0 5472 uint16
-1.1164709241129458 image new limits and type: 0 1083 uint16
-split_convert runtime 2.6781295109540224
-1.1124783516861498 image new limits and type: 0 5799 uint16
-1.112859187182039 image new limits and type: 0 1043 uint16
-split_convert runtime 2.6741063110530376
-1.1213288409635425 image new limits and type: 0 5264 uint16
-1.1212917109951377 image new limits and type: 0 1000 uint16
-split_convert runtime 2.68882690416649
-1.1216374477371573 image new limits and type: 0 5151 uint16
-1.1213428927585483 image new limits and type: 0 1083 uint16
-split_convert runtime 2.6890277159400284
-1.1130965668708086 image new limits and type: 0 5366 uint16
-1.1125577026978135 image new limits and type: 0 1084 uint16
-split_convert runtime 2.671611110214144
-1.1126205916516483 image new limits and type: 0 5084 uint16
-1.1124498057179153 image new limits and type: 0 1194 uint16
-split_convert runtime 2.670836986042559
-1.111887623090297 image new limits and type: 0 5347 uint16
-1.1114960978738964 image new limits and type: 0 1096 uint16
-split_convert runtime 2.6695917239412665
-1.1126327347010374 image new limits and type: 0 5168 uint16
-1.1121449540369213 image new limits and type: 0 1035 uint16
-split_convert runtime 2.6706597171723843
-1.112216825131327 image new limits and type: 0 4651 uint16
-1.111830544192344 image new limits and type: 0 1021 uint16
-split_convert runtime 2.6698927460238338
-dict_keys(['GFP', 'red']) <class 'list'> 11
-compiling the GFP channel
-compiling the red channel
-files_to_4D runtime 72.03455576021224
-finished reading and compiling images 72.04679292906076
-applying preshift
-initial shift of 0 [0, 0, 0]
-10 (86, 1024, 1024)
-  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [02:22<21:22, 142.53s/it] 20%|██        | 2/10 [04:38<18:28, 138.52s/it] 30%|███       | 3/10 [06:50<15:48, 135.52s/it] 40%|████      | 4/10 [09:01<13:22, 133.67s/it] 50%|█████     | 5/10 [11:09<10:59, 131.93s/it] 60%|██████    | 6/10 [13:18<08:43, 130.78s/it] 70%|███████   | 7/10 [15:26<06:30, 130.00s/it] 80%|████████  | 8/10 [17:34<04:18, 129.40s/it] 90%|█████████ | 9/10 [19:42<02:08, 128.72s/it]100%|██████████| 10/10 [21:48<00:00, 128.13s/it]100%|██████████| 10/10 [21:48<00:00, 130.90s/it]
-applying phase correlation
-[-7.  3. 10.] [-7.0, 3.0, 10.0]
-applying preshift on timepoint 1 with current pre_shift [-7.0, 3.0, 10.0]
-applying phase correlation
-[-3. -5.  2.] [-10.0, -2.0, 12.0]
-applying preshift on timepoint 2 with current pre_shift [-10.0, -2.0, 12.0]
-applying phase correlation
-[-3.  0. -3.] [-13.0, -2.0, 9.0]
-applying preshift on timepoint 3 with current pre_shift [-13.0, -2.0, 9.0]
-applying phase correlation
-[-1.  1.  0.] [-14.0, -1.0, 9.0]
-applying preshift on timepoint 4 with current pre_shift [-14.0, -1.0, 9.0]
-applying phase correlation
-[-1.  6.  5.] [-15.0, 5.0, 14.0]
-applying preshift on timepoint 5 with current pre_shift [-15.0, 5.0, 14.0]
-applying phase correlation
-[0. 0. 4.] [-15.0, 5.0, 18.0]
-applying preshift on timepoint 6 with current pre_shift [-15.0, 5.0, 18.0]
-applying phase correlation
-[ 0.  1. -1.] [-15.0, 6.0, 17.0]
-applying preshift on timepoint 7 with current pre_shift [-15.0, 6.0, 17.0]
-applying phase correlation
-[0. 0. 2.] [-15.0, 6.0, 19.0]
-applying preshift on timepoint 8 with current pre_shift [-15.0, 6.0, 19.0]
-applying phase correlation
-[0. 7. 5.] [-15.0, 13.0, 24.0]
-applying preshift on timepoint 9 with current pre_shift [-15.0, 13.0, 24.0]
-applying phase correlation
-[0. 4. 1.] [-15.0, 17.0, 25.0]
-applying preshift on timepoint 10 with current pre_shift [-15.0, 17.0, 25.0]
-finished applying preshift 1309.9211791018024
-cosine_sim for timepoint:   0%|          | 0/10 [00:00<?, ?it/s]cosine_sim for timepoint:  10%|█         | 1/10 [00:01<00:16,  1.83s/it]cosine_sim for timepoint:  20%|██        | 2/10 [00:03<00:14,  1.81s/it]cosine_sim for timepoint:  30%|███       | 3/10 [00:05<00:12,  1.80s/it]cosine_sim for timepoint:  40%|████      | 4/10 [00:07<00:10,  1.80s/it]cosine_sim for timepoint:  50%|█████     | 5/10 [00:09<00:09,  1.80s/it]cosine_sim for timepoint:  60%|██████    | 6/10 [00:10<00:07,  1.80s/it]cosine_sim for timepoint:  70%|███████   | 7/10 [00:12<00:05,  1.80s/it]cosine_sim for timepoint:  80%|████████  | 8/10 [00:14<00:03,  1.80s/it]cosine_sim for timepoint:  90%|█████████ | 9/10 [00:16<00:01,  1.80s/it]cosine_sim for timepoint: 100%|██████████| 10/10 [00:18<00:00,  1.80s/it]cosine_sim for timepoint: 100%|██████████| 10/10 [00:18<00:00,  1.80s/it]2022-02-07 10:12:43.398039: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.411260: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcublas.so.11'; dlerror: libcublas.so.11: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.421069: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcublasLt.so.11'; dlerror: libcublasLt.so.11: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.427692: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcufft.so.10'; dlerror: libcufft.so.10: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.434359: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcurand.so.10'; dlerror: libcurand.so.10: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.441115: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcusolver.so.11'; dlerror: libcusolver.so.11: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.447685: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcusparse.so.11'; dlerror: libcusparse.so.11: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.454392: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudnn.so.8'; dlerror: libcudnn.so.8: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/sw/rev/21.12/haswell/gcc-9.3.0/anaconda3-2021.05-e3srav/lib
-2022-02-07 10:12:43.454448: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1850] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
-Skipping registering GPU devices...
-2022-02-07 10:12:43.460874: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
-To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
-terminate called after throwing an instance of 'std::bad_alloc'
-  what():  std::bad_alloc
-pythondied with signal 6
-
-Mon Feb  7 10:12:50 2022
-----------------
