@@ -153,7 +153,7 @@ def get_file_names(path, group_by='', order=True, nested_files=False, criteria='
 
 def img_limits(img, limit=0, ddtype='uint16'):
     # for i in tqdm(range(1), desc = 'img_limit'):
-    start_time = timer()
+    # start_time = timer()
     max_limits = {'uint8': 255, 'uint16': 65530}
     # print('image old limits', img.min(), img.max())
     img = img - img.min()        
@@ -165,7 +165,7 @@ def img_limits(img, limit=0, ddtype='uint16'):
     img = img/img.max()
     img = img*limit
     img = img.astype(ddtype)
-    print(timer() - start_time, 'image new limits and type:', img.min(), img.max(), img.dtype)
+    # print(timer() - start_time, 'image new limits and type:', img.min(), img.max(), img.dtype)
     return img
 
 def split_convert(image, ch_names):
@@ -204,6 +204,9 @@ def files_to_4D(files_list, ch_names=[''],
         print('compiling the', ch, 'channel')
         image_4D[ch] = [stack[0:z_dim] for stack in image_4D[ch]]
         image_4D[ch] = np.array(image_4D[ch])
+        for tim in tqdm(range(len(image_4D[ch]))):
+            if image_4D[ch][tim].min()!= 0 or image_4D[ch][tim].dtype != ddtype:
+                image_4D[ch][tim] = img_limits(image_4D[ch][tim], limit=0, ddtype=ddtype)    
     if save == True:
         if save_path[-1] != '/':
             save_path += '/'
@@ -219,12 +222,7 @@ def files_to_4D(files_list, ch_names=[''],
             save_name = save_path+'4D_'+ch+'_'+save_file
             if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
                 save_name += '.tif'
-            save_img = img.copy()
-            for tim, stack in enumerate(save_img):
-                if stack.min()!= 0 or stack.dtype != ddtype:
-                    save_img[tim] = img_limits(stack, limit=0, ddtype=ddtype)
-            save_image(save_name, save_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    # print('image_properties', image_4D.keys(), type(image_4D[ch_names[-1]]), 'saved_image dtype', type(save_img))
+            save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)
     print('files_to_4D runtime', timer()-start_time)
     return image_4D
 
@@ -1003,30 +1001,6 @@ def main():
                                     save_path=input_txt['save_path'],
                                     save_file=ants_step+'_'+file_4D)
             print('finished ants run with', drift_t)
-        ###### saving shifts mats as csv
-        # shift_file = input_txt['save_path']+"ants_shifts.csv"
-        # with open(shift_file, 'w', newline='') as csvfile:
-        #     fieldnames = ['reg_step', 'timepoint', 'ants_shift']
-        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        #     writer.writeheader()
-        #     for reg_step, shifts in ants_shifts.items():
-        #         for timepoint, ind_shift in shifts.items():
-        #             writer.writerow({'reg_step': reg_step, 'timepoint' : timepoint+1, 'ants_shift' : ind_shift})
-        # csvfile.close()  
-        ###### doing final similarity check after antspy, and saving values
-        # similairties = {}
-        # for t, img in enumerate(image_4D[input_txt['ch_names'][0]][1:]):
-        #     img_t = image_4D[input_txt['ch_names'][0]][t]
-        #     similairties[t+1] = check_similarity(img_t, img)
-        # checks_file = input_txt['save_path']+"similarity_check.csv"
-        # with open(checks_file, 'w', newline='') as csvfile:
-        #     fieldnames = ['reg_step', 'file', 'similarity_check']
-        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        #     writer.writeheader()
-        #     for reg_step, checks in similairties.items():
-        #         for file, similarity_check in checks.items():
-        #             writer.writerow({'reg_step': reg_step, 'file' : file, 'similarity_check' : similarity_check})
-        # csvfile.close()
         print('finished antspy registration', timer()-start_time)
 
     if 'postshift' in input_txt['steps']:
@@ -1038,7 +1012,6 @@ def main():
         for l, neuron in neurons.items():
             image = image_4D.copy()
             image[input_txt['ch_names'][0]] = neuron
-            # post_shifts = {}
             for i, drift_t in enumerate(input_txt['drift_corr']):
                 ants_step = str(i+1)
                 try:
@@ -1067,7 +1040,7 @@ def main():
                                         check_ch=input_txt['ch_names'][0],                       
                                         save=True, 
                                         save_path=input_txt['save_path'],
-                                        save_file='neuron'+str(l)+ants_step+'_'+file_4D)
+                                        save_file='neuron'+str(l)+'_'+ants_step+'_'+file_4D)
                 print('finished postshift on neuron %i run with' %l, drift_t)
                 del image
         print('total ruuntime of postshift', timer()-start_time)
