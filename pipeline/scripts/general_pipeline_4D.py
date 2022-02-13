@@ -155,7 +155,6 @@ def img_limits(img, limit=0, ddtype='uint16'):
     # for i in tqdm(range(1), desc = 'img_limit'):
     # start_time = timer()
     max_limits = {'uint8': 255, 'uint16': 65530}
-    # print('image old limits', img.min(), img.max())
     img = img - img.min()        
     if limit == 0:
         limit = img.max()
@@ -184,7 +183,7 @@ def split_convert(image, ch_names):
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype='uint8'):
+                xy_pixel=1, z_pixel=1, ddtype='uint16'):
     """
     read files_list, load the individual 3D_img tifffiles, 
     and convert them into a dict of 4D-arrays of the identified ch
@@ -204,7 +203,7 @@ def files_to_4D(files_list, ch_names=[''],
         print('compiling the', ch, 'channel')
         image_4D[ch] = [stack[0:z_dim] for stack in image_4D[ch]]
         image_4D[ch] = np.array(image_4D[ch])
-        for tim in tqdm(range(len(image_4D[ch]))):
+        for tim in tqdm(range(len(image_4D[ch])), desc = 'setting img_limits'):
             if image_4D[ch][tim].min()!= 0 or image_4D[ch][tim].dtype != ddtype:
                 image_4D[ch][tim] = img_limits(image_4D[ch][tim], limit=0, ddtype=ddtype)    
     if save == True:
@@ -499,7 +498,7 @@ def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_f
         except:
             mask[i] = mask[i]
             mask_image[i] = mask_image[i]
-        mask[i] = img_limits(mask[i], limit=255, ddtype='uint8')
+        mask[i] = img_limits(mask[i], limit=255, ddtype='uint16')
     if save == True:
         if save_file == '':
             save_name = save_path+'masked_image.tif'
@@ -550,7 +549,7 @@ def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pix
         neuron = labeled_array.copy()
         neuron[neuron != l] = 0
         neuron[neuron == l] = ind+1
-        neuron = neuron.astype('uint8')
+        neuron = neuron.astype('uint16')
         # print('values and size of neuron:', neuron.min(), neuron.max(), neuron.sum()/(ind+1))
         if neuron.sum() != 0 and neuron.sum() < np.prod(np.array(neuron.shape)):
             neurons[ind+1] = neuron
