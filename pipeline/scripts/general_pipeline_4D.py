@@ -21,7 +21,6 @@ from tqdm import tqdm
 import operator
 # import skimage.transform as tr #I don't remember why I have this package
 # from scipy import ndimage
-# from skimage import io
 # import time #I don't remember why I have this package
 # from scipy.ndimage import gaussian_filter as gf
 # from pickle import FALSE #I don't remember why I have this package
@@ -174,8 +173,8 @@ def split_convert(image, ch_names):
     image_ch = {}
     for ind, ch in enumerate(ch_names):
         image_ch[ch] = image[ind::len(ch_names)]
-    # if len(ch_names) > 1:
-    #     image_ch[ch_names[-1]] = median(image_ch[ch_names[-1]])
+    if len(ch_names) > 1:
+        image_ch[ch_names[-1]] = median(image_ch[ch_names[-1]])
     for ch, img in image_ch.items():
         image_ch[ch] = img_limits(img, limit=0)
     print('split_convert runtime', timer()-start_time)
@@ -464,7 +463,7 @@ def mask_image(volume, return_mask = False ,sig = 2):
     mask            np.array
                     Returns a binary np.array of equal shape to the original image, labeling the masked area.
     """
-    for i in tqdm(1, desc = '3D_mask'):
+    for i in tqdm(range(1), desc = '3D_mask'):
         start_time = timer()
         image = volume.copy()
         # if input image is 2D...
@@ -1006,7 +1005,8 @@ def main():
         start_time = timer()
         if 'neurons' not in locals():
             neurons = {1: image_4D[input_txt['ch_names'][0]]}
-        if ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][0]]):
+        ref_t = input_txt['ants_ref_st']
+        if isinstance(ref_t, int) == False or ref_t < 0 or ref_t > len(image_4D[input_txt['ch_names'][-1]]):
             ref_t = 0
         for l, neuron in neurons.items():
             image = image_4D.copy()

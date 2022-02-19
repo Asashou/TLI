@@ -3,21 +3,21 @@ script_run: general_pipline_4D.py
 purpose: preprocessing session 211104 with pipeline from 220205
 
 ### provided paths: data_path, saving_path and n2v model path
-path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/2021/211104/
-save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2021/211104/steps/ants/
+path_to_data: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2022/T4/220209/new_pipeline/neruon1/last/
+save_path: /home/mpg08/aicha.hajiali/TLI_project/TLI_data/preprocessed/2022/T4/220209/new_pipeline/neruon1/last/
 model_path: /home/mpg08/aicha.hajiali/TLI_project/preprocessing/n2v/models/
 
 ### basename of output tiff files
-output_name: 211104_brain1.2_LP40_P36.tif
+output_name: 220209_brain2.2_LP40_P36_neuron1.tif
 
 ### data filtering parameters: name(group), channel names,subset
-group: 211104_brain1.2_LP40_P36
+group: Rigid_
 ch_names: GFP, red  ## if the images has one channel then also specify here (e.g:GFP)
 reg_subset: 0,60,325,600,300,650  ##Z,Y,X slicing. In case no subset required, type 0,0
 # reg_subset is not used in current 4D_pipeline
 
 ### preprocessing steps to apply
-steps: compile, preshift, ants, postshift
+steps: preshift, ants, postshift
 #all means ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
 
 ### rotation and image_flip (not implemented yet)
@@ -37,7 +37,7 @@ model_name: n2v_3D_v6
 
 ### registration sequence
 reference_last: false
-ants_ref_no: 1
+ants_ref_no: 35
 ref_reset: 50
 
 ### registration parameters
@@ -49,7 +49,7 @@ grad_step: 0.2
 flow_sigma: 3
 total_sigma: 0
 aff_sampling: 32
-reg_iterations: 240,80,20
-aff_iterations: 3000,1200,1200,60
+reg_iterations: 80,40,10
+aff_iterations: 2100,1200,1200,10
 aff_shrink_factors: 6,4,2,1
 aff_smoothing_sigmas: 3,2,1,0
