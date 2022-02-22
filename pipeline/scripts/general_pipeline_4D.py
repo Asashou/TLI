@@ -771,8 +771,8 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
     if isinstance(image, dict) == False:
         image = {ch_names[0]:image}
     s_range = len(image[ch_names[ref_ch]])
-    scope = np.arange(0,ref_t)
-    scope = np.concatenate((scope, np.arange(ref_t,s_range)))
+    scope = np.arange(ref_t,-1,-1)
+    scope = np.concatenate((scope, np.arange(ref_t+1,s_range)))
     print('ants seq for 4D regi',scope)
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
@@ -803,7 +803,7 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
         shifts.append(shift['fwdtransforms'])
         for ch in ch_names:
             # print('before copy',(image[ch][i] == shifted[ch]).all())
-            image[ch][i] = shifted[ch] 
+            image[ch][i] = shifted[ch].copy()
 #             print('last step',(image[ch][i] == shifted[ch]).all())
             if image[ch][i].min() != 0:
                 image[ch][i] = img_limits(image[ch][i], ddtype='uint16')
