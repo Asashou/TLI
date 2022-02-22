@@ -109,7 +109,7 @@ def txt2dict(path):
     if 'all' in input_txt['steps']:
         input_txt['steps'] = ['compile','preshift', 'trim','postshift', 'ants', 'n2v', 'clahe', 'mask', 'segment']
     if 'check_ch' not in input_txt['ch_names']:
-        print('channel defined for similarity_check not recognized, so ch_0 used')
+        print('channel defined for similarity_check not recognized, so %s used' %input_txt['ch_names'][0])
         input_txt['check_ch'] = input_txt['ch_names'][0]
     parameters = {'grad_step':0.2, 'flow_sigma':3, 'total_sigma':0,
                 'aff_sampling':32, 'aff_random_sampling_rate':0.2, 
@@ -674,7 +674,7 @@ def antspy_regi(ref, img, drift_corr, metric='mattes',
     del fixed, moving
     return shift
 
-def antspy_drift(ref, img, shift, check=True):
+def antspy_drift(ref, img, shift, check=False):
     """shifts image based on ref and provided shift"""
     try:
         ref = ref.numpy()
@@ -684,27 +684,21 @@ def antspy_drift(ref, img, shift, check=True):
         img = img.numpy()
     except:
         pass
-    # print(type(ref), type(img))
     ref= ants.from_numpy(np.float32(ref))
     img= ants.from_numpy(np.float32(img))
     vol_shifted = ants.apply_transforms(ref, img, transformlist=shift)
+    ref = ref.numpy().astype('uint16')
+    img = img.numpy().astype('uint16')
+    vol_shifted = vol_shifted.numpy().astype('uint16')
+    print((vol_shifted == img).all())
     if check == True:
-        # ref = ref.astype(img.dtype)
-        ref = ref.numpy().astype('uint16')
-        img = img.numpy().astype('uint16')
-        vol_shifted = vol_shifted.numpy().astype('uint16')
         pre_check = check_similarity(ref, img)
         post_check = check_similarity(ref, vol_shifted)
         print('similarity_check', pre_check, 'improved to', post_check)
         if (pre_check - post_check) > 0.1:
             vol_shifted = img.copy()
             print('similarity_check was smaller after shift, so shift was ignored:', pre_check, '>>', post_check)
-    else:
-        ref = ref.numpy().astype('uint16')
-        img = img.numpy().astype('uint16')
-        vol_shifted = vol_shifted.numpy().astype(('uint16'))
-    # print(type(ref), type(img), type(vol_shifted))
-    # del fixed, moving
+    print((vol_shifted == img).all())
     return vol_shifted
 
 def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1, 
@@ -729,8 +723,8 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
                         total_sigma=total_sigma,
                         aff_sampling=aff_sampling, 
                         syn_sampling=syn_sampling)
-    shifted = image.copy()
-    for ch, img in shifted.items():
+    shifted = {}
+    for ch, img in image.items():
         shifted[ch]= antspy_drift(ref[ch],img,shift=shift['fwdtransforms'],check=False)
     if check_ch in image.keys():
         pre_check = check_similarity(ref[check_ch], image[check_ch])
@@ -742,8 +736,9 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
             shifted = image.copy()
     else:
         print(check_ch, 'not a recognized ch in image')
-        shifted = image.copy()
+        # shifted = image.copy()
     for ch, img in shifted.items():
+        # print('second step', (shifted[ch] == image[ch]).all())
         if img.min() != 0:
             shifted[ch] = img_limits(img, ddtype='uint16')
         if save == True:
@@ -751,13 +746,13 @@ def apply_ants_channels(ref, image, drift_corr='Rigid',  xy_pixel=1,
             if '.tif' not in save_name:
                 save_name += '.tif'
             save_image(save_name, shifted[ch], xy_pixel=xy_pixel, z_pixel=z_pixel)
-    try:
-        for ch in ref.keys():
-            ref[ch] = ref[ch].numpy().astype('uint16')
-            img[ch] = image[ch].numpy().astype('uint16')
-            shifted[ch] = shifted[ch].numpy().astype('uint16')
-    except:
-        pass
+    # try:
+    #     for ch in ref.keys():
+    #         ref[ch] = ref[ch].numpy().astype('uint16')
+    #         img[ch] = image[ch].numpy().astype('uint16')
+    #         shifted[ch] = shifted[ch].numpy().astype('uint16')
+    # except:
+    #     print('no need')
     return shifted, shift
 
 def apply_ants_4D(image, drift_corr,  xy_pixel=1, 
@@ -781,9 +776,12 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
     print('ants seq for 4D regi',scope)
     if ref_t== -1:
         ref_t= len(image[ch_names[-1]])-1
+        
+    raw_sim_checks = [1]
+    for i in tqdm(np.arange(len(image[check_ch])-1), desc='similarity_check'):
+        raw_sim_checks.append(check_similarity(image[check_ch][i], image[check_ch][i+1]))
     fixed = {ch:img[ref_t].copy() for ch, img in image.items()}
     shifts = [0]
-    shifted_4D = image.copy()
     desc = 'AntsPy_'+drift_corr
     for i in tqdm(scope, desc=desc):
         moving = {ch:img[i].copy() for ch, img in image.items()}
@@ -804,21 +802,19 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
                                             save=False)
         shifts.append(shift['fwdtransforms'])
         for ch in ch_names:
-            shifted_4D[ch][i] = shifted[ch].copy() 
-            try:
-                shifted_4D[ch][i] = shifted_4D[ch][i].numpy()
-            except:
-                pass
-            if shifted_4D[ch][i].min() != 0:
-                shifted_4D[ch][i] = img_limits(shifted_4D[ch][i], ddtype='uint16')
+            # print('before copy',(image[ch][i] == shifted[ch]).all())
+            image[ch][i] = shifted[ch] 
+            print('last step',(image[ch][i] == shifted[ch]).all())
+            if image[ch][i].min() != 0:
+                image[ch][i] = img_limits(image[ch][i], ddtype='uint16')
         del shifted, moving, shift
 
     sim_checks = [1]
-    for i in tqdm(np.arange(len(shifted_4D[check_ch])-1), desc='similarity_check'):
-        sim_checks.append(check_similarity(shifted_4D[check_ch][i], shifted_4D[check_ch][i+1]))
+    for i in tqdm(np.arange(len(image[check_ch])-1), desc='similarity_check'):
+        sim_checks.append(check_similarity(image[check_ch][i], image[check_ch][i+1]))
 
     if save == True:
-        for ch, img in shifted_4D.items():
+        for ch, img in image.items():
             save_name = str(save_path+drift_corr+'_'+ch+'_'+save_file)
             if '.tif' not in save_name:
                 save_name += '.tif'
@@ -835,17 +831,17 @@ def apply_ants_4D(image, drift_corr,  xy_pixel=1,
         csvfile.close()    
 
         check_file = save_path+drift_corr+'ANTsCheck_'+save_file+".csv"
-        check_file = shift_file.replace('.tif','')
-        with open(check_file, 'w', newline='') as csvfile:
-            fieldnames = ['timepoint', 'check']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        check_file = check_file.replace('.tif','')
+        with open(check_file, 'w', newline='') as csvfile1:
+            fieldnames = ['timepoint', 'original','after_shift']
+            writer = csv.DictWriter(csvfile1, fieldnames=fieldnames)
             writer.writeheader()
             for timepoint, check in enumerate(sim_checks):
-                writer.writerow({'timepoint' : timepoint+1, 'check' : check})
-        csvfile.close()    
+                writer.writerow({'timepoint' : timepoint+1, 'original':raw_sim_checks[timepoint],'after_shift' : check})
+        csvfile1.close()    
     print('ants_round runtime', timer()-start_time)  
     del shifts, sim_checks
-    return shifted_4D
+    return image
 
 ######################
 
