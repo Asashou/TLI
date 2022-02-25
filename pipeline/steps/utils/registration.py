@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
 
-def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, name_shifts, ref_t=0, drift_corr='Rigid'):
+def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=0, drift_corr='Rigid'):
     """
     This function takes the folder containing all the files to each channel as an input and drift corrects them.
     It uses the files from ch1 to do the drift correction and applies the same correction to ch2.
@@ -52,6 +52,8 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, name_s
             shifts.append(shift['fwdtransforms'])
                     
             del vol_shifted_ch1, vol_shifted_ch2, shift, moving_ch1, moving_ch2
+    shifts_name = save_path+drift_corr+'_'+save_name+'.csv'
+    shifts_name = shifts_name.replace('.tif','')
+    np.savetxt(X=shifts, fname=shifts_name, delimiter=', ', fmt='% s')
 
-    np.savetxt(X=shifts, fname=save_path+name_shifts, delimiter=', ', fmt='% s')
     return
