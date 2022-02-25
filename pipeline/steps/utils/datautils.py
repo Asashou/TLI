@@ -1,5 +1,3 @@
-import ants
-from skimage import io, filters
 from tqdm import tqdm
 import numpy as np
 import os
@@ -45,16 +43,29 @@ def get_file_names(path, group_by='', order=True, nested_files=False, criteria='
         file_list.sort(reverse=order)    
     return file_list
 
-def split_convert(image, ch_names):
+def split_convert(image, ch_names, filter=True):
     """deinterleave the image into dictionary of two channels"""
     image_ch = {}
     for ind, ch in enumerate(ch_names):
         image_ch[ch] = image[ind::len(ch_names)]
-    if len(ch_names) > 1:
+    if filter:
         image_ch[ch_names[-1]] = median(image_ch[ch_names[-1]])
     # for ch, img in image_ch.items():
     #     image_ch[ch] = img_limits(img, limit=0)
     return image_ch
+
+def img_limits(img, limit=0, ddtype='uint16'):
+    max_limits = {'uint8': 255, 'uint16': 65530}
+    img = img - img.min()        
+    if limit == 0:
+        limit = img.max()
+    if limit > max_limits[ddtype]:
+        limit = max_limits[ddtype]
+        print('the limit provided is larger than alocated dtype. limit reassigned as appropriate', limit)
+    img = img/img.max()
+    img = img*limit
+    img = img.astype(ddtype)
+    return img
 
 def files_to_4D(files_list, ch_names=[''], 
                 save=True, save_path='', save_file='', 
@@ -121,7 +132,6 @@ def check_similarity(ref, image):
         pass
     check = sum(metrics.pairwise.cosine_similarity(image.ravel().reshape(1,-1), 
                            ref.ravel().reshape(1,-1)))[0]
-    # print('check_similarity of image to ref is', check)
     return check
 
 
