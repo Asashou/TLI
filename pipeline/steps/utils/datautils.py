@@ -47,8 +47,6 @@ def get_file_names(path, group_by='', order=True, nested_files=False, criteria='
 
 def split_convert(image, ch_names):
     """deinterleave the image into dictionary of two channels"""
-    # for i in tqdm(range(1), desc = 'split_convert'):
-    start_time = timer()
     image_ch = {}
     for ind, ch in enumerate(ch_names):
         image_ch[ch] = image[ind::len(ch_names)]
@@ -56,7 +54,6 @@ def split_convert(image, ch_names):
         image_ch[ch_names[-1]] = median(image_ch[ch_names[-1]])
     # for ch, img in image_ch.items():
     #     image_ch[ch] = img_limits(img, limit=0)
-    print('split_convert runtime', timer()-start_time)
     return image_ch
 
 def files_to_4D(files_list, ch_names=[''], 
