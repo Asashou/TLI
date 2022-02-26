@@ -148,7 +148,6 @@ def similarity_4D(image_4D, save=True, save_path='', save_file=''):
         if '.csv' not in checks_file:
             checks_file +='.csv'
         with open(checks_file, 'w', newline='') as csvfile:
-            print('worked')
             fieldnames = ['timepoint', 'cosine_similarity']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
