@@ -2,6 +2,7 @@ import ants
 from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
+import os
 
 def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=0, drift_corr='Rigid'):
     """
@@ -50,6 +51,14 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
             datautils.save_image(ch2_name, vol_shifted_ch2, xy_pixel=0.0764616, z_pixel=0.4)
 
             shifts.append(shift['fwdtransforms'])
+
+            for el in shift['fwdtransforms']:
+                os.remove(el)
+            for el in shift['invtransforms']:
+                try:
+                    os.remove(el)
+                except:
+                    pass
                     
             del vol_shifted_ch1, vol_shifted_ch2, shift, moving_ch1, moving_ch2
     shifts_name = save_path+drift_corr+'_'+save_name+'.csv'

@@ -62,6 +62,8 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     image_clahe= np.empty(image.shape)
     clahe_mask = cv.createCLAHE(clipLimit=clipLimit, tileGridSize=kernel_size)
     for ind, slice in enumerate(image):
+        if image_clahe.min() != 0:
+            image_clahe = datautils.img_limits(image_clahe, limit=0)
         image_clahe[ind] = clahe_mask.apply(slice)
         image_clahe[ind] = cv.threshold(image_clahe[ind], 
                             thresh=np.percentile(image_clahe[ind], 95), 
