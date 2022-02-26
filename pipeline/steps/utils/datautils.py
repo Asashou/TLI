@@ -14,9 +14,9 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
         dim = 'ZYX'
     elif len(image.shape) == 4:
         dim = 'TZYX'
-    if image.dtype != 'uint16': ###this part to be omitted later
-        print('image type is not uint16')
-        image = image.astype('uint16')
+    # if image.dtype != 'uint16': ###this part to be omitted later
+    #     print('image type is not uint16')
+    #     image = image.astype('uint16')
     tif.imwrite(name, image, imagej=True, dtype=image.dtype, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
     return
