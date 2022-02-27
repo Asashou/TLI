@@ -41,6 +41,8 @@ def get_file_names(path, group_by='', order=True, nested_files=False, criteria='
         file_list = [file for file in file_list if group_by in file]
         file_list = [file for file in file_list if criteria in file]
         file_list.sort(reverse=order)    
+    print('first 5 files')
+    print(file_list[0:5])
     return file_list
 
 def split_convert(image, ch_names, filter=True):
@@ -67,9 +69,9 @@ def img_limits(img, limit=0, ddtype='uint16'):
     img = img.astype(ddtype)
     return img
 
-def files_to_4D(files_list, ch_names=[''], 
+def files_to_4D(files_list, ch_names=[''], filter=True,
                 save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype='uint16'):
+                xy_pixel=1, z_pixel=1):
     """
     read files_list, load the individual 3D_img tifffiles, 
     and convert them into a dict of 4D-arrays of the identified ch
@@ -80,7 +82,7 @@ def files_to_4D(files_list, ch_names=[''],
     files_list.sort()
     for file in tqdm(files_list, desc = 'compiling_files'):
         image = tif.imread(file)
-        image = split_convert(image, ch_names=ch_names)
+        image = split_convert(image, ch_names=ch_names, filter=filter)
         for ch in ch_names:
             image_4D[ch].append(image[ch])
     z_dim = min([len(img) for img in image_4D[ch_names[0]]])
@@ -108,14 +110,13 @@ def files_to_4D(files_list, ch_names=[''],
     print('files_to_4D runtime', timer()-start_time)
     return image_4D
 
-def read_files(path, group_by ,compile=True, ch_names=[''], 
-                save=True, save_path='', save_file='', 
-                xy_pixel=1, z_pixel=1, ddtype='uint16'):
-    files_list = get_file_names(path=path, group_by=group_by, order=True, nested_files=False, criteria='tif')
+def read_files(path, group_by ,compile=True, ch_names=[''], order=True,
+                save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
+    files_list = get_file_names(path=path, group_by=group_by, order=order, nested_files=False, criteria='tif')
     if compile:
         image_4D = files_to_4D(files_list, ch_names=ch_names, 
                             save=save, save_path=save_path, save_file=save_file, 
-                            xy_pixel=xy_pixel, z_pixel=z_pixel, ddtype=ddtype)
+                            xy_pixel=xy_pixel, z_pixel=z_pixel)
     else:
         temp = ch_names.copy()
         temp.sort()
