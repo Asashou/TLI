@@ -4,7 +4,7 @@ import numpy as np
 import utils.datautils as datautils
 import os
 
-def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=0, drift_corr='Rigid'):
+def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=0, drift_corr='Rigid', metric='CC'):
     """
     This function takes the folder containing all the files to each channel as an input and drift corrects them.
     It uses the files from ch1 to do the drift correction and applies the same correction to ch2.
@@ -36,7 +36,7 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
             moving_ch1 = ants.from_numpy(np.float32(img_4D_g[i]))
             moving_ch2 = ants.from_numpy(np.float32(img_4D_r[i]))
             
-            shift = ants.registration(fixed=last, moving=moving_ch2, type_of_transform=drift_corr)
+            shift = ants.registration(fixed=last, moving=moving_ch2, type_of_transform=drift_corr, syn_metric=metric)
             
             vol_shifted_ch1 = ants.apply_transforms(fixed=last, moving=moving_ch1, transformlist=shift['fwdtransforms'])
             vol_shifted_ch2 = shift['warpedmovout']

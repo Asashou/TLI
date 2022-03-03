@@ -110,11 +110,13 @@ def files_to_4D(files_list, ch_names=[''], filter=True,
     print('files_to_4D runtime', timer()-start_time)
     return image_4D
 
-def read_files(path, group_by ,compile=True, ch_names=[''], order=True,
-                save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
-    files_list = get_file_names(path=path, group_by=group_by, order=order, nested_files=False, criteria='tif')
+def read_files(path, group_by ,compile=True, ch_names=[''], order=True, 
+                save=True, save_path='', save_file='', filter=True,
+                xy_pixel=1, z_pixel=1):
+    files_list = get_file_names(path=path, group_by=group_by, order=order, 
+                                nested_files=False, criteria='tif')
     if compile:
-        image_4D = files_to_4D(files_list, ch_names=ch_names, 
+        image_4D = files_to_4D(files_list, ch_names=ch_names, filter=filter,
                             save=save, save_path=save_path, save_file=save_file, 
                             xy_pixel=xy_pixel, z_pixel=z_pixel)
     else:
@@ -156,7 +158,3 @@ def similarity_4D(image_4D, save=True, save_path='', save_file=''):
                 writer.writerow({'timepoint' : ind+1, 'cosine_similarity' : check})
         csvfile.close()
     return similairties
-
-
-
-
