@@ -25,9 +25,9 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
 
     for i in tqdm(scope):
         if i == ref_t:
-            ch1_name = save_path+ch_names[0]+'_'+drift_corr+save_name+str(f"{i+1:03d}")+'.tif'
+            ch1_name = save_path+ch_names[0]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch1_name, img_4D_g[ref_t], xy_pixel=0.0764616, z_pixel=0.4)
-            ch2_name = save_path+ch_names[1]+'_'+drift_corr+save_name+str(f"{i+1:03d}")+'.tif'
+            ch2_name = save_path+ch_names[1]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch2_name, img_4D_r[ref_t], xy_pixel=0.0764616, z_pixel=0.4)
 
             last = ants.from_numpy(np.float32(img_4D_r[ref_t]))
@@ -45,9 +45,9 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
             vol_shifted_ch1 = np.int16(vol_shifted_ch1.numpy())
             vol_shifted_ch2 = np.int16(vol_shifted_ch2.numpy())
 
-            ch1_name = save_path+ch_names[0]+'_'+drift_corr+save_name+str(f"{i+1:03d}")+'.tif'
+            ch1_name = save_path+ch_names[0]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch1_name, vol_shifted_ch1, xy_pixel=0.0764616, z_pixel=0.4)
-            ch2_name = save_path+ch_names[1]+'_'+drift_corr+save_name+str(f"{i+1:03d}")+'.tif'
+            ch2_name = save_path+ch_names[1]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch2_name, vol_shifted_ch2, xy_pixel=0.0764616, z_pixel=0.4)
 
             shifts.append(shift['fwdtransforms'])
