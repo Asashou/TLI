@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from textwrap import wrap
 import csv
 
-
-def stable_branch(img, stab_limit=4,save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
+def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     stable_img = img.copy()
     # deleting unstabilized pixels: ones that don't remain at least an hour
     for t in tqdm(np.arange(img[stab_limit-1:].shape[0]), desc='filtering_px'):
