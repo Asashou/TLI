@@ -55,8 +55,8 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     if file != '':
         image = tif.imread(file)
     if image.min()<0:
-        image = (image - image.min())
-    image = image.astype('uint16')
+        image -= image.min()
+    # image = image.astype('uint16')
     file_name = os.path.basename(file)
     image_clahe= np.empty(image.shape)
     clahe_mask = cv.createCLAHE(clipLimit=clipLimit, tileGridSize=kernel_size)
