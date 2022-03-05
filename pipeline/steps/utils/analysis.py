@@ -9,7 +9,7 @@ import csv
 def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     stable_img = img.copy()
     # deleting unstabilized pixels: ones that don't remain at least an hour
-    for t in tqdm(np.arange(img[stab_limit-1:].shape[0]), desc='filtering_px', leave=True):
+    for t in tqdm(np.arange(img[stab_limit-1:].shape[0]), desc='filtering_px', leave=False):
         for z in np.arange(img.shape[1]):
             for y in np.arange(img.shape[2]):
                 for x in np.arange(img.shape[3]): 
@@ -33,7 +33,7 @@ def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_p
 def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     cols_hist = {}
     ind = 0
-    for col in tqdm(cols, desc='calculating Col occupancy', leave=True):
+    for col in tqdm(cols, desc='calculating Col occupancy', leave=False):
         ind += 1
         cols_hist['col_'+str(ind)] = []
         filter = np.broadcast_to(col, neuron.shape)
