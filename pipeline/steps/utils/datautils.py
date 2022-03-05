@@ -80,7 +80,7 @@ def files_to_4D(files_list, ch_names=[''], filter=True,
     start_time = timer()
     image_4D = {ch:[] for ch in ch_names}
     files_list.sort()
-    for file in tqdm(files_list, desc = 'compiling_files'):
+    for file in tqdm(files_list, desc = 'compiling_files', leave=True):
         image = tif.imread(file)
         image = split_convert(image, ch_names=ch_names, filter=filter)
         for ch in ch_names:
@@ -140,7 +140,7 @@ def check_similarity(ref, image):
 
 def similarity_4D(image_4D, save=True, save_path='', save_file=''):
     similairties = [1]
-    for t in tqdm(np.arange(len(image_4D[1:])), desc='cosine_sim for timepoint'):
+    for t in tqdm(np.arange(len(image_4D[1:])), desc='cosine_sim for timepoint', leave=True):
         similairties.append(check_similarity(image_4D[t], image_4D[t+1]))
     if save == True:
         if save_file == '':

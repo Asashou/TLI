@@ -23,7 +23,7 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
     scope = np.arange(ref_t,-1,-1)
     scope = np.concatenate((scope, np.arange(ref_t,len(img_4D_r))))
 
-    for i in tqdm(scope):
+    for i in tqdm(scope, desc = 'applying_antspy', leave=True):
         if i == ref_t:
             ch1_name = save_path+ch_names[0]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch1_name, img_4D_g[ref_t], xy_pixel=0.0764616, z_pixel=0.4)
