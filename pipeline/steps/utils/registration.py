@@ -3,6 +3,10 @@ from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
 import os
+from skimage.filters import gaussian
+from skimage.registration import phase_cross_correlation as corr
+import csv
+from scipy import ndimage
 
 def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=0, drift_corr='Rigid', metric='CC'):
     """
@@ -66,3 +70,66 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
     np.savetxt(X=shifts, fname=shifts_name, delimiter=', ', fmt='% s')
 
     return
+
+def phase_corr(fixed, moving, sigma):
+    if fixed.shape > moving.shape:
+        print('fixed image is larger than moving', fixed.shape, moving.shape)
+        fixed = fixed[tuple(map(slice, moving.shape))]
+        print('fixed image resized to', fixed.shape)
+    elif fixed.shape < moving.shape:
+        print('fixed image is smaller than moving', fixed.shape, moving.shape)
+        moving = moving[tuple(map(slice, fixed.shape))]
+        print('moving image resized to', moving.shape)
+    fixed = gaussian(fixed, sigma=sigma)
+    moving = gaussian(moving, sigma=sigma)
+    print('applying phase correlation')
+    try:
+        for i in [0]:
+            shift, error, diffphase = corr(fixed, moving)
+    except:
+        for i in [0]:
+            shift, error, diffphase = np.zeros(len(moving)), 0, 0
+            print("couldn't perform PhaseCorr, so shift was casted as zeros")
+    return shift
+
+def phase_corr_4D(image, sigma, xy_pixel=1, 
+                  z_pixel=1, ch_names=[1], 
+                  ref_ch=-1,                      
+                  save=True, save_path='',
+                  save_file='', save_shifts=True):
+    if isinstance(image, dict) == False:
+        image = {ch_names[0]:image}
+    pre_shifts = {}
+    if len(ch_names) == 1:
+        ref_ch = ch_names[0]
+    else:
+        try:
+            ref_ch = ch_names[ref_ch]
+        except:
+            ref_ch = ch_names[-1]
+    ref_im = image[ref_ch]
+    current_shift = [0 for i in ref_im[0].shape]
+    print('initial shift of 0', current_shift)
+    print(len(ref_im[1:]), ref_im[1].shape)
+    for ind in tqdm(np.arange(len(ref_im[1:]))) :
+        pre_shifts[ind+1] = phase_corr(ref_im[ind], ref_im[ind+1], sigma) 
+        current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
+        print(pre_shifts[ind+1], current_shift)
+        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
+        for ch, img in image.items(): 
+            image[ch][ind] = ndimage.shift(img[ind], current_shift) 
+    if save == True:
+        for ch, img in image.items():
+            save_name = str(save_path+'PhaseCorr_'+ch+'_'+save_file)
+            if '.tif' not in save_name:
+                save_name += '.tif'
+            datautils.save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)   
+        shift_file = save_path+"PhaseCorr_shifts.csv"
+        with open(shift_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'phase_shift']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, shift in pre_shifts.items():
+                writer.writerow({'timepoint' : timepoint+1, 'phase_shift' : shift})
+        csvfile.close()
+    return image, pre_shifts
