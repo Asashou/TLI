@@ -93,10 +93,12 @@ def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, sa
 def trans_px(neuron, stable, start_t=36, plot=True, save=True, save_path='', save_file=''):
     neuron[neuron != 0] = 1
     stable[stable != 0] = 1
+    neuron = neuron.astype('float32')
+    stable = stable.astype('float32')
 
     transient = []
     trans_per = []
-    for t in tqdm(np.arange(stable.shape[0]), desc='growth rate'):
+    for t in tqdm(np.arange(stable.shape[0]), desc='calculating tansient'):
         transient.append((neuron[t].sum()-stable[t].sum()))
         trans_per.append((neuron[t].sum()-stable[t].sum())/neuron[t].sum())
 
