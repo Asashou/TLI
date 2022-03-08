@@ -30,13 +30,16 @@ def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_p
         datautils.save_image(save_name, stable_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return stable_img
 
-def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
+def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
     cols_hist = {}
     ind = 0
     for col in tqdm(cols, desc='calculating Col occupancy', leave=False):
         ind += 1
         cols_hist['col_'+str(ind)] = []
         filter = np.broadcast_to(col, neuron.shape)
+        filter = filter.copy()
+        filter -= filter.min()
+        filter = filter/filter.max()
         col_size = filter.sum()
         nue_sub = filter * neuron # pixels occupied by neuron in the column
         for t in tqdm(nue_sub, leave=False):
@@ -44,7 +47,7 @@ def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, sa
 
     #normalization step
     for col, ocup in cols_hist.items():
-        cols_hist[col] = ocup/nor_fact
+        cols_hist[col] = [val/nor_fact for val in ocup]
     
     # definning timepoints
     T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
@@ -78,12 +81,115 @@ def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, sa
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for i, t in enumerate(timepoints):
-                fill_line = [t]
-                for val in cols_hist.values():
-                    fill_line.append(val[i])
+                fill_line = {'timepoint':t}
+                for col, val in cols_hist.items():
+                    fill_line[col] = val[i]
                 writer.writerow(fill_line)
         csvfile.close()
     
     return cols_hist
     
 
+def trans_px(neuron, stable, start_t=36, plot=True, save=True, save_path='', save_file=''):
+    neuron[neuron != 0] = 1
+    stable[stable != 0] = 1
+
+    transient = []
+    trans_per = []
+    for t in tqdm(np.arange(stable.shape[0]), desc='growth rate'):
+        transient.append((neuron[t].sum()-stable[t].sum()))
+        trans_per.append((neuron[t].sum()-stable[t].sum())/neuron[t].sum())
+
+    # definning timepoints
+    T_length = np.arange(len(transient))
+    timepoints = [start_t+(i*0.25) for i in T_length] 
+
+    if save_path != '' and save_path[-1] != '/':
+        save_path += '/'
+
+    if plot:
+        fig_name = save_path+save_file+'_transient.pdf'
+        #ploting the results
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,10))
+        ax1.plot(timepoints, transient)
+        ax1.set_title('Number of Transient Pixels')
+        ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Number of Transient Pixels')
+        ax2.plot(timepoints, trans_per)
+        ax2.set_title('Percentage of Transient Pixels')
+        ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Percentage of Transient Pixels')
+        plt.savefig(fig_name, bbox_inches='tight')
+    
+    if save == True:
+        if save_file == '':
+            save_file = "transient_Pxs.csv"
+        csv_file = save_path+save_file
+        if '.csv' not in csv_file:
+            csv_file +='.csv'
+        with open(csv_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'No. of transient', 'percentage']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, val in enumerate(transient):
+                writer.writerow({'timepoint' : timepoint, 'No. of transient' : val, 'percentage': trans_per[timepoint]})
+        csvfile.close()
+    
+    return transient, trans_per
+
+
+def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=True, save=True, save_path='', save_file=''):
+    neuron[neuron != 0] = 1
+    stable[stable != 0] = 1
+
+    all_sizes = []
+    for t in tqdm(np.arange(neuron.shape[0]), desc='calculating neuron volume'):
+        all_sizes.append(neuron[t].sum())
+
+    if stable.sum() != 0:
+            stable_sizes = []
+            for t in tqdm(np.arange(stable.shape[0]), desc='calculating stable volume'):
+                stable_sizes.append(stable[t].sum())
+    else:
+        stable_sizes = np.zeros(stable.shape[0])
+        # stable_sizes[:] = np.NaN
+    
+    #normalization
+    if normalize:
+        norm_factor = all_sizes[-1]
+        all_sizes = [val/norm_factor for val in all_sizes]
+        stable_sizes = [val/norm_factor for val in stable_sizes]
+    
+    # definning timepoints
+    T_length = np.arange(len(all_sizes))
+    timepoints = [start_t+(i*0.25) for i in T_length] 
+
+    if save_path != '' and save_path[-1] != '/':
+        save_path += '/'
+
+    if plot:
+        fig_name = save_path+save_file+'_neu_vol.pdf'
+        #ploting the results
+        plt.figure(figsize=(8, 6), dpi=80)
+        plt.plot(timepoints, all_sizes, label='all pixels')
+        if sum(stable_sizes) != 0:
+            plt.plot(timepoints, stable_sizes, label='stable pixels')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.title('Neuron Volume Over Time')
+        plt.ylabel("\n".join(wrap('No of pixels [a.u.]',30)))
+        plt.xlabel("Hours After Puparium Formation [h]")
+        plt.savefig(fig_name, bbox_inches='tight')
+
+    if save == True:
+        if save_file == '':
+            save_file = "transient_Pxs.csv"
+        csv_file = save_path+save_file
+        if '.csv' not in csv_file:
+            csv_file +='.csv'
+        with open(csv_file, 'w', newline='') as csvfile:
+            fieldnames = ['timepoint', 'Total Neuron volume', 'stable Neuron volume']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for timepoint, val in enumerate(all_sizes):
+                writer.writerow({'timepoint' : timepoint, 'Total Neuron volume' : val, 'stable Neuron volume': stable_sizes[timepoint]})
+        csvfile.close()
+    
+    return all_sizes, stable_sizes
