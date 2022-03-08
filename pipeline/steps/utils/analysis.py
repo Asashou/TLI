@@ -129,8 +129,8 @@ def trans_px(neuron, stable, start_t=36, plot=True, save=True, save_path='', sav
             fieldnames = ['timepoint', 'No. of transient', 'percentage']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for timepoint, val in enumerate(transient):
-                writer.writerow({'timepoint' : timepoint, 'No. of transient' : val, 'percentage': trans_per[timepoint]})
+            for t, val in enumerate(transient):
+                writer.writerow({'timepoint' : timepoints[t], 'No. of transient' : val, 'percentage': trans_per[t]})
         csvfile.close()
     
     return transient, trans_per
@@ -188,8 +188,8 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
             fieldnames = ['timepoint', 'Total Neuron volume', 'stable Neuron volume']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for timepoint, val in enumerate(all_sizes):
-                writer.writerow({'timepoint' : timepoint, 'Total Neuron volume' : val, 'stable Neuron volume': stable_sizes[timepoint]})
+            for t, val in enumerate(all_sizes):
+                writer.writerow({'timepoint' : timepoints[t], 'Total Neuron volume' : val, 'stable Neuron volume': stable_sizes[t]})
         csvfile.close()
     
     return all_sizes, stable_sizes
