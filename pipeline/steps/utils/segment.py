@@ -1,16 +1,65 @@
 from timeit import default_timer as timer
-import os
-import cv2 as cv
 import numpy as np 
-import tifffile as tif
-from n2v.models import N2V
 from tqdm import tqdm
-# from skimage.filters import gaussian, threshold_otsu
+from skimage.filters import gaussian, threshold_otsu
 import operator
 from scipy import ndimage
-
 import utils.datautils as datautils
 
+
+def mask_image(volume, return_mask = False ,sig = 1):
+    """
+    Create a binary mask from a 2 or 3-dimensional np.array.
+    Method normalizes the image, converts it to greyscale, then applies gaussian bluring (kernel width set to 2 by default, can be changed with sig parameter).
+    This is followed by thresholding the image using the isodata method and returning a binary mask. 
+    Parameters
+    ----------
+    image           np.array
+                    np.array of an image (2 or 3D)
+    return_mask     bool
+                    If False (default), the mask is subtracted from the original image. If True, a boolian array is returned, of the shape of the original image, as a mask. 
+    sig             Int
+                    kernel width for gaussian smoothing. set to 2 by default.
+    Returns
+    -------
+    mask            np.array
+                    Returns a binary np.array of equal shape to the original image, labeling the masked area.
+    """
+    # for i in tqdm(range(1), desc = '3D_mask'):
+    image = volume.copy()
+    image = image.astype('float32')
+    # normalize to the range 0-1
+    image -= image.min()
+    image /= image.max()
+    # blur and grayscale before thresholding
+    blur = gaussian(image, sigma=sig)
+    # perform adaptive thresholding
+    t = threshold_otsu(blur.ravel())
+    mask = blur > t
+    # convert to bool
+    mask = np.array(mask, dtype=bool)
+    if return_mask == False:
+        image[mask==False] = 0
+        return image
+    else:
+        return mask
+
+def mask_4D(image, xy_pixel=1, z_pixel=1, sig=1, save=True, save_path='', save_file=''):
+    mask_image = image.copy()
+    for i in tqdm(range(len(image)), desc='masking the image'):
+        try:
+            mask_image[i] = mask_image(image[i], return_mask=True ,sig=sig)
+        except:
+            mask_image[i] = mask_image[i]
+    if save == True:
+        if save_file == '':
+            save_name = save_path+'masked_image.tif'
+        else:
+            save_name = save_path+'image_mask_'+save_file
+        if '.tif' not in save_name:
+            save_name += '.tif'
+        datautils.save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return mask_image
 
 
 def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
