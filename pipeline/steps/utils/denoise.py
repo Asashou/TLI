@@ -35,7 +35,7 @@ def N2V_predict(model_name, model_path, n_tile=(2,4,4), xy_pixel=1, z_pixel=1, i
 
 def N2V_4D(image_4D, model_name, model_path, n_tile=(2,4,4), xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
     model = N2V(config=None, name=model_name, basedir=model_path)
-    for st in tqdm(range(len(image_4D)), desc='applying N2V', leave=False):
+    for st in tqdm(range(len(image_4D)), desc='applying N2V'):
         image_4D[st] = model.predict(image_4D[st], axes='ZYX', n_tiles=n_tile) 
     if save == True:
         if save_path != '' and save_path[-1] != '/':
@@ -79,7 +79,7 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     return image_clahe
 
 def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
-    for st in tqdm(range(len(image_4D)), desc='applying clahe', leave=False):
+    for st in tqdm(range(len(image_4D)), desc='applying clahe'):
         image_4D[st] = apply_clahe(image=image_4D[st],
                                     kernel_size=kernel_size, 
                                     clipLimit=clipLimit, 
