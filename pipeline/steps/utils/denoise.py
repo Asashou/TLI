@@ -133,19 +133,21 @@ def mask_image(volume, return_mask = False ,sig = 1):
     else:
         return mask
 
-def mask_4D(image, xy_pixel=1, z_pixel=1, sig=1, save=True, save_path='', save_file=''):
-    mask_image = image.copy()
+def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
+    image_mask = image.copy()
     for i in tqdm(range(len(image)), desc='masking the image'):
         try:
-            mask_image[i] = mask_image(image[i], return_mask=True ,sig=sig)
+            image_mask[i] = mask_image(image[i], return_mask=False ,sig=sig)
         except:
-            mask_image[i] = mask_image[i]
+            for i in [1]:
+                print('tt')
+                image_mask[i] = image_mask[i]
     if save == True:
         if save_file == '':
             save_name = save_path+'masked_image.tif'
         else:
-            save_name = save_path+'image_mask_'+save_file
+            save_name = save_path+'mask_'+save_file
         if '.tif' not in save_name:
             save_name += '.tif'
-        datautils.save_image(save_name, mask_image, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    return mask_image
+        datautils.save_image(save_name, image_mask, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return image_mask
