@@ -27,7 +27,7 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
     scope = np.arange(ref_t,-1,-1)
     scope = np.concatenate((scope, np.arange(ref_t,len(img_4D_r))))
 
-    for i in tqdm(scope, desc = 'applying_antspy', leave=False):
+    for i in tqdm(scope, desc = 'applying_antspy'):
         if i == ref_t:
             ch1_name = save_path+ch_names[0]+'_'+drift_corr+'_'+save_name+'_'+str(f"{i+1:03d}")+'.tif'
             datautils.save_image(ch1_name, img_4D_g[ref_t], xy_pixel=0.0764616, z_pixel=0.4)
@@ -72,24 +72,16 @@ def antspy_drift_corr(img_4D_r, img_4D_g, ch_names, save_path, save_name, ref_t=
     return
 
 def phase_corr(fixed, moving, sigma):
+    # setting the length of fixed and moving images to be same (smaller length)
     if fixed.shape > moving.shape:
-        print('fixed image is larger than moving', fixed.shape, moving.shape)
         fixed = fixed[tuple(map(slice, moving.shape))]
-        print('fixed image resized to', fixed.shape)
     elif fixed.shape < moving.shape:
-        print('fixed image is smaller than moving', fixed.shape, moving.shape)
         moving = moving[tuple(map(slice, fixed.shape))]
-        print('moving image resized to', moving.shape)
+    # applying gaussian blur into fixed and moving images
     fixed = gaussian(fixed, sigma=sigma)
     moving = gaussian(moving, sigma=sigma)
-    print('applying phase correlation')
-    try:
-        for i in [0]:
-            shift, error, diffphase = corr(fixed, moving)
-    except:
-        for i in [0]:
-            shift, error, diffphase = np.zeros(len(moving)), 0, 0
-            print("couldn't perform PhaseCorr, so shift was casted as zeros")
+    # calculating phase_correlation between fixed and moving images
+    shift, error, diffphase = corr(fixed, moving)
     return shift
 
 def phase_corr_4D(image, sigma, xy_pixel=1, 
@@ -109,13 +101,9 @@ def phase_corr_4D(image, sigma, xy_pixel=1,
             ref_ch = ch_names[-1]
     ref_im = image[ref_ch]
     current_shift = [0 for i in ref_im[0].shape]
-    print('initial shift of 0', current_shift)
-    print(len(ref_im[1:]), ref_im[1].shape)
-    for ind in tqdm(np.arange(len(ref_im[1:]))) :
+    for ind in tqdm(np.arange(len(ref_im[1:])), desc='applying phase_corr'):
         pre_shifts[ind+1] = phase_corr(ref_im[ind], ref_im[ind+1], sigma) 
         current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
-        print(pre_shifts[ind+1], current_shift)
-        print('applying preshift on timepoint', ind+1, 'with current pre_shift', current_shift)
         for ch, img in image.items(): 
             image[ch][ind] = ndimage.shift(img[ind], current_shift) 
     if save == True:
