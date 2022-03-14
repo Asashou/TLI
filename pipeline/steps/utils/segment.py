@@ -1,6 +1,7 @@
 from timeit import default_timer as timer
 import numpy as np 
 from tqdm import tqdm
+from skimage.filters import gaussian, threshold_otsu
 import operator
 from scipy import ndimage
 import utils.datautils as datautils
@@ -38,7 +39,8 @@ def segment_3D(image, neu_no=10, max_neu_no=30, min_size=5000, xy_pixel=1, z_pix
         if neuron.sum() != 0 and neuron.sum() < np.prod(np.array(neuron.shape)):
             neurons[ind+1] = neuron
         else:
-            print('this segment was removed because its empty')
+            pass
+            # print('this segment was removed because its empty')
         if save == True:
             if save_file == '':
                 save_name = str(save_path+str(ind)+'_neuron.tif')
