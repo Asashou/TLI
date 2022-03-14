@@ -123,25 +123,28 @@ def mask_image(volume, return_mask = False ,sig = 1):
     # blur and grayscale before thresholding
     blur = gaussian(image, sigma=sig)
     # perform adaptive thresholding
-    t = threshold_otsu(blur.ravel())
+    t = threshold_otsu(blur)
     mask = blur > t
     # convert to bool
     mask = np.array(mask, dtype=bool)
     if return_mask == False:
         image[mask==False] = 0
-        return image
-    else:
-        return mask
+        mask = image
+    return mask
 
-def mask_4D(image, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
+def mask_4D(image, return_mask=True, xy_pixel=1, z_pixel=1, sig=2, save=True, save_path='', save_file=''):
     image_mask = image.copy()
     for i in tqdm(range(len(image)), desc='masking the image'):
         try:
-            image_mask[i] = mask_image(image[i], return_mask=False ,sig=sig)
+            image_mask[i] = mask_image(image[i], return_mask=True ,sig=sig)
         except:
             for i in [1]:
-                print('tt')
                 image_mask[i] = image_mask[i]
+    
+    if return_mask == False:
+        image[image_mask == False] = 0
+        image_mask = image
+
     if save == True:
         if save_file == '':
             save_name = save_path+'masked_image.tif'
