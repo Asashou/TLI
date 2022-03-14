@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 from textwrap import wrap
 import csv
+import pandas as pd
 
 def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     stable_img = img.copy()
@@ -195,3 +196,50 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
         csvfile.close()
     
     return all_sizes, stable_sizes
+
+
+
+def calculate_DGI(entry_point, neuron):
+    """
+    This function takes a 4D array of a neuron and calculates its directional growth indext (DGI) from the entry point based on the the formula:
+
+    DGI = length(V)/length(sum(|Vi|))
+
+    It returns a datafram containing the values of the orientation vector for each time point.
+    
+    Parameter:
+    entry_point:    Array with 4 values that correspond to the entry point of the dendrite into the neuropil. Values correspond to the 'TZYX' coordinates of the point.
+    
+    neuron:         4D array containing the dendrite to analyze. It should only contain parts of the dendrite.
+    """
+    pixel_co = np.argwhere(neuron>0)
+    norm_pixel_values = np.zeros(pixel_co.shape)
+    norm_pixel_values[:,0] = pixel_co[:,0]
+    norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
+    norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
+    norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
+    norm_pixel_values[:,2] *= -1
+
+    DGIs = pd.DataFrame(columns=['Ori Vec_Y','Ori Vec_X', 'Ori Vec Length', 'DGI'])
+    for i in range(int(max(norm_pixel_values[:,0]))):
+ 
+        timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
+        timepoint = np.delete(timepoint,0,1)
+        timepoint = np.delete(timepoint,0,1)
+        vec_length = np.linalg.norm(timepoint, axis=1)
+        dbp_index = np.argwhere(vec_length == 0)
+        timepoint = np.delete(timepoint, (dbp_index), axis=0)
+        vec_length = np.delete(vec_length, dbp_index)
+        ori_vec = timepoint.sum(axis=0)
+        ori_vec_length = np.linalg.norm(ori_vec)
+        DGI = np.divide(ori_vec_length, vec_length.sum())
+        Info = np.zeros([1,4])
+        Info[0,0] = ori_vec[0]
+        Info[0,1] = ori_vec[1]
+        Info[0,2] = ori_vec_length
+        Info[0,3] = DGI
+        DGIs = DGIs.append(pd.DataFrame(Info,
+                                columns=['Ori Vec_Y','Ori Vec_X','Ori Vec Length','DGI']
+                                ))
+
+    return DGIs
