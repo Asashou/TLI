@@ -55,17 +55,18 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     if file != '':
         image = tif.imread(file)
         file_name = os.path.basename(file)
-    image -= image.min()
+    if image.min() < 0:
+        image -= image.min()
     image = image.astype('uint16')
     image_clahe= np.empty(image.shape)
     clahe_mask = cv.createCLAHE(clipLimit=clipLimit, tileGridSize=kernel_size)
     for ind, slice in enumerate(image):
         image_clahe[ind] = clahe_mask.apply(slice)
-        image_clahe[ind] = cv.threshold(image_clahe[ind], 
-                            thresh=np.percentile(image_clahe[ind], 95), 
-                            maxval=image_clahe[ind].max(), 
-                            type= cv.THRESH_TOZERO)[1]
-    image_clahe = datautils.img_limits(image_clahe, limit=image.max(), ddtype='int16')
+        # image_clahe[ind] = cv.threshold(image_clahe[ind], 
+        #                     thresh=np.percentile(image_clahe[ind], 95), 
+        #                     maxval=image_clahe[ind].max(), 
+        #                     type= cv.THRESH_TOZERO)[1]
+    # image_clahe = datautils.img_limits(image_clahe, limit=image.max(), ddtype='int16')
     if save == True:
         if save_path != '' and save_path[-1] != '/':
             save_path += '/'
@@ -79,6 +80,8 @@ def apply_clahe(kernel_size, xy_pixel=1, z_pixel=1, image=0, file='', clipLimit=
     return image_clahe
 
 def clahe_4D(image_4D, kernel_size, clipLimit=1, xy_pixel=1, z_pixel=1, save=True, save_path='', save_file=''):
+    image_4D -= image_4D.min()
+    image_4D = image_4D.astype('uint16')
     for st in tqdm(range(len(image_4D)), desc='applying clahe'):
         image_4D[st] = apply_clahe(image=image_4D[st],
                                     kernel_size=kernel_size, 
