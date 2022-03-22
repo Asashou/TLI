@@ -243,3 +243,50 @@ def calculate_DGI(entry_point, neuron):
                                 ))
 
     return DGIs
+
+
+def px_lifetimes(image_4D):
+    lifetimes = []
+    for z in range(image_4D[0].shape[0]):
+        for y in range(image_4D[0].shape[1]):
+            for x in range(image_4D[0].shape[2]):
+                px = image_4D[:,z,y,x]
+                if px.sum() > 0:
+                    iter = np.where(px == 1)[0]
+                    # lifetimes.append([(z,y,x),px,iter])
+                    life = 1
+                    if len(iter) == 1:
+                        lifetimes.append([iter[0],z,y,x,1])
+                    else:
+                        for i, t in enumerate(iter[1:]):
+                            if t - iter[i] == 1:
+                                life += 1
+                            elif t - iter[i] > 1:
+                                lifetimes.append([iter[i],z,y,x,life])
+                                life = 1
+                        # if life > 1:
+                        lifetimes.append([iter[-1],z,y,x,life])
+    lifetimes = np.array(lifetimes)
+    return lifetimes
+
+def stable_px(image_4D, st_limit = 4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
+    lifetimes = px_lifetimes(image_4D)
+    stable_px = lifetimes[lifetimes[:,-1]>st_limit-1]
+    stable_img = np.empty_like(image_4D)
+    for px in stable_px:
+        z, y, x = px[1], px[2], px[3]
+        for i in np.arange(px[-1]-st_limit,-1,-1):
+            t = px[0] - i
+            stable_img[t,z,y,x] = 1
+            # px_PC.append([t,z,y,x])
+    if save == True:
+        if save_path != '' and save_path[-1] != '/':
+            save_path += '/'
+        if save_file == '':
+            save_name = str(save_path+'stable_image.tif')
+        else:
+            save_name = str(save_path+'stable_'+save_file)
+        if '.tif' not in save_name:
+            save_name +='.tif'
+        datautils.save_image(save_name, stable_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
+    return stable_img
