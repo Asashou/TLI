@@ -244,41 +244,50 @@ def calculate_DGI(entry_point, neuron):
 
     return DGIs
 
+def _4D_to_PC(img):
+    limit = img.min() -1
+    px = np.argwhere(img>limit)
+    return px
+
+def _PC_to_4D(PC, img_shape):
+    img = np.zeros(img_shape)
+    for px in PC:
+        t,z,y,x = px[0],px[1],px[2],px[3]
+        img[t,z,y,x] = 1
+    return img
 
 def px_lifetimes(image_4D):
     lifetimes = []
-    for z in range(image_4D[0].shape[0]):
-        for y in range(image_4D[0].shape[1]):
-            for x in range(image_4D[0].shape[2]):
-                px = image_4D[:,z,y,x]
-                if px.sum() > 0:
-                    iter = np.where(px == 1)[0]
-                    # lifetimes.append([(z,y,x),px,iter])
-                    life = 1
-                    if len(iter) == 1:
-                        lifetimes.append([iter[0],z,y,x,1])
-                    else:
-                        for i, t in enumerate(iter[1:]):
-                            if t - iter[i] == 1:
-                                life += 1
-                            elif t - iter[i] > 1:
-                                lifetimes.append([iter[i],z,y,x,life])
-                                life = 1
-                        # if life > 1:
-                        lifetimes.append([iter[-1],z,y,x,life])
+    px_ind = _4D_to_PC(image_4D)
+    for i in px_ind:
+        z,y,x = i[0], i[1], i[2]
+        px = image_4D[:,z,y,x]
+        if px.sum() > 0:
+            iter = np.where(px == 1)[0]
+            life = 1
+            if len(iter) == 1:
+                lifetimes.append([iter[0],z,y,x,1])
+            else:
+                for i, t in enumerate(iter[1:]):
+                    if t - iter[i] == 1:
+                        life += 1
+                    elif t - iter[i] > 1:
+                        lifetimes.append([iter[i],z,y,x,life])
+                        life = 1
+                # if life > 1:
+                lifetimes.append([iter[-1],z,y,x,life])
     lifetimes = np.array(lifetimes)
     return lifetimes
 
 def stable_px(image_4D, st_limit = 4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     lifetimes = px_lifetimes(image_4D)
-    stable_px = lifetimes[lifetimes[:,-1]>st_limit-1]
+    st_px = lifetimes[lifetimes[:,-1]>st_limit-1]
     stable_img = np.empty_like(image_4D)
-    for px in stable_px:
+    for px in st_px:
         z, y, x = px[1], px[2], px[3]
         for i in np.arange(px[-1]-st_limit,-1,-1):
             t = px[0] - i
             stable_img[t,z,y,x] = 1
-            # px_PC.append([t,z,y,x])
     if save == True:
         if save_path != '' and save_path[-1] != '/':
             save_path += '/'
