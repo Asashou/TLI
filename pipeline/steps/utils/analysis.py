@@ -258,7 +258,7 @@ def _PC_to_4D(PC, img_shape):
 
 def px_lifetimes(image_4D):
     lifetimes = []
-    px_ind = _4D_to_PC(image_4D)
+    px_ind = _4D_to_PC(image_4D[0])
     for i in px_ind:
         z,y,x = i[0], i[1], i[2]
         px = image_4D[:,z,y,x]
