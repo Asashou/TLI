@@ -299,3 +299,34 @@ def stable_px(image_4D, st_limit = 4, save=True, save_path='', save_file='', xy_
             save_name +='.tif'
         datautils.save_image(save_name, stable_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
     return stable_img
+
+
+def calculate_lifetimes(neuron):
+    """
+    This function takes a 4D array as an input and calculates the lifetimes of the pixels over time. 
+    The array should only contain the pixels that are part of the dendrite.
+    It first binarizes the image then multiplies the previous to the current volume to see if the pixel survived.
+    Afterwards it adds the volume of the binary image of the current index to the last volume, thereby increasing
+    the count of each pixel that is still "alive".
+    
+    Parameter:
+    ------------------
+    neuron: 4D array of dendrite
+    
+    Returns:
+    -------------------
+    
+    neuron_lifetimes: 4D array of the same shape as the input array but with pixel values as their lifetimes in every stack.
+    """
+    
+    neuron_lifetimes = np.empty(neuron.shape)
+    neuron_binary = neuron.copy()
+    
+    neuron_binary[neuron_binary > 0] = 1
+    neuron_lifetimes[0] = neuron_binary[0]
+    
+    for i in tqdm.tqdm(range(1,neuron_binary.shape[0])):
+        current_lifetimes = (neuron_binary[i]*neuron_lifetimes[i-1]) + neuron_binary[i]
+        neuron_lifetimes[i] = current_lifetimes
+        
+    return neuron_lifetimes
