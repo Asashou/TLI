@@ -157,7 +157,7 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
     norm_pixel_values[:,2] *= -1
 
-    DGIs = pd.DataFrame(columns=['timepoints','Ori Vec_Y','Ori Vec_X', 'Ori Vec Length', 'DGI'])
+    DGIs = pd.DataFrame(columns=['timepoints','Ori_Vec_Y','Ori_Vec_X', 'Ori_Vec_Length', 'DGI'])
     for i in range(int(max(norm_pixel_values[:,0]))):
         age = i*0.25+start_t
         timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
@@ -177,7 +177,7 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
         Info[0,3] = ori_vec_length
         Info[0,4] = DGI
         DGIs = DGIs.append(pd.DataFrame(Info,
-                                columns=['timepoints','Ori Vec_Y','Ori Vec_X','Ori Vec Length','DGI']
+                                columns=['timepoints','Ori_Vec_Y','Ori_Vec_X','Ori_Vec_Length','DGI']
                                 ))
     if save == True:
         if save_file == '':
