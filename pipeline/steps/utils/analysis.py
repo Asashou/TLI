@@ -72,34 +72,11 @@ def stable_N(neuron, stab_limit=4, save=True, save_path='', save_file='', xy_pix
 def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=True, save=True, save_path='', save_file=''):
     neuron[neuron != 0] = 1
     stable[stable != 0] = 1
-
-    # all_sizes = []
-    # # for t in tqdm(np.arange(neuron.shape[0]), desc='calculating neuron volume'):
-    # for t in np.arange(neuron.shape[0]):
-    #     all_sizes.append(neuron[t].sum())
-
-    # if stable.sum() != 0:
-    #         stable_sizes = []
-    #         # for t in tqdm(np.arange(stable.shape[0]), desc='calculating stable volume'):
-    #         for t in np.arange(stable.shape[0]):
-    #             stable_sizes.append(stable[t].sum())
-    # else:
-    #     stable_sizes = np.zeros(stable.shape[0])
-    
-    # #normalization (optinal)
-    # if normalize:
-    #     norm_factor = all_sizes[-1]
-    #     all_sizes = [val/norm_factor for val in all_sizes]
-    #     stable_sizes = [val/norm_factor for val in stable_sizes]
     
     # definning timepoints
     T_length = np.arange(len(neuron))
     timepoints = [start_t+(i*0.25) for i in T_length] 
 
-    # making a dataframe of the results
-    # output_volumes = pd.DataFrame({'timepoints':timepoints,'vol_all':all_sizes, 'vol_stable':stable_sizes})
-    # all_sizes = neuron.sum(axis=1)
-    # stable_sizes = stable.sum(axis=1)
     output_volumes = pd.DataFrame({'timepoints':timepoints,
                                     'vol_all':neuron.sum(axis=(1,2,3)), 
                                     'vol_stable':stable.sum(axis=(1,2,3))})
@@ -112,8 +89,7 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
         #ploting the results
         plt.figure(figsize=(8, 6), dpi=80)
         plt.plot(timepoints, output_volumes.vol_all, label='all pixels')
-        if sum(stable_sizes) != 0:
-            plt.plot(timepoints, output_volumes.vol_stable, label='stable pixels')
+        plt.plot(timepoints, output_volumes.vol_stable, label='all pixels')
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.title('Neuron Volume Over Time')
         plt.ylabel("\n".join(wrap('No of pixels [a.u.]',30)))
@@ -125,15 +101,6 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
             save_file = "transient_Pxs.csv"
         csv_file = save_path+save_file
         output_volumes.to_csv(csv_file, sep=';')
-        # if '.csv' not in csv_file:
-        #     csv_file +='.csv'
-        # with open(csv_file, 'w', newline='') as csvfile:
-        #     fieldnames = ['timepoint', 'Total Neuron volume', 'stable Neuron volume']
-        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        #     writer.writeheader()
-        #     for t, val in enumerate(all_sizes):
-        #         writer.writerow({'timepoint' : timepoints[t], 'Total Neuron volume' : val, 'stable Neuron volume': stable_sizes[t]})
-        # csvfile.close()
     return output_volumes
 
 def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save_file=''):
@@ -201,24 +168,20 @@ def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, sa
         nue_sub = filter * neuron # pixels occupied by neuron in the column
         for t in tqdm(nue_sub, leave=False):
             cols_hist['col_'+str(ind)].append(t.sum()/col_size)
-
-    #normalization step
-    for col, ocup in cols_hist.items():
-        cols_hist[col] = [val/nor_fact for val in ocup]
-    
+    #convert the results to dataframe
+    occupancy = pd.DataFrame(cols_hist)  
     # definning timepoints
     T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
-    timepoints = [start_t+(i*0.25) for i in T_length] 
-
+    occupancy['timepoints'] = [start_t+(i*0.25) for i in range(0,len(occupancy.index))] 
     if save_path != '' and save_path[-1] != '/':
         save_path += '/'
-
     if plot:
         fig_name = save_path+save_file+'_col_occupancy.pdf'
         #ploting the results
         plt.figure(figsize=(8, 6), dpi=80)
-        for col, val in cols_hist.items():
-            plt.plot(timepoints, val, label=col)
+        cols = list(cols_hist.keys())
+        for col in cols:
+            plt.plot(occupancy.timepoints, occupancy[col], label=col)
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.title('Column Occupancy')
         plt.ylabel("\n".join(wrap('Column Occupancy [a.u.]',30)))
@@ -231,197 +194,5 @@ def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, sa
         csv_file = save_path+save_file
         if '.csv' not in csv_file:
             csv_file +='.csv'
-        with open(csv_file, 'w', newline='') as csvfile:
-            fieldnames = ['timepoint']
-            for col in cols_hist.keys():
-                fieldnames.append(col)
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for i, t in enumerate(timepoints):
-                fill_line = {'timepoint':t}
-                for col, val in cols_hist.items():
-                    fill_line[col] = val[i]
-                writer.writerow(fill_line)
-        csvfile.close()
-    
-    return cols_hist
-
-# def stable_branch(img, stab_limit=4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
-#     stable_img = img.copy()
-#     # deleting unstabilized pixels: ones that don't remain at least an hour
-#     for t in tqdm(np.arange(img[stab_limit-1:].shape[0]), desc='filtering_px', leave=False):
-#         for z in np.arange(img.shape[1]):
-#             for y in np.arange(img.shape[2]):
-#                 for x in np.arange(img.shape[3]): 
-#                     if img[t:t+stab_limit,z,y,x].sum() < stab_limit:
-#                         stable_img[t+stab_limit-1,z,y,x] = 0
-
-#     # make the first 4 timepoints the same (you can ignore first hour of analysis)
-#     stable_img[0] = stable_img[1] = stable_img[2] = stable_img[1]
-#     if save == True:
-#         if save_path != '' and save_path[-1] != '/':
-#             save_path += '/'
-#         if save_file == '':
-#             save_name = str(save_path+'stable_image.tif')
-#         else:
-#             save_name = str(save_path+'stable_'+save_file)
-#         if '.tif' not in save_name:
-#             save_name +='.tif'
-#         datautils.save_image(save_name, stable_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
-#     return stable_img
-
-# def px_lifetimes(image_4D):
-#     lifetimes = []
-#     px_ind = _4D_to_PC(image_4D[0])
-#     for i in px_ind:
-#         z,y,x = i[0], i[1], i[2]
-#         px = image_4D[:,z,y,x]
-#         if px.sum() > 0:
-#             iter = np.where(px == 1)[0]
-#             life = 1
-#             if len(iter) == 1:
-#                 lifetimes.append([iter[0],z,y,x,1])
-#             else:
-#                 for i, t in enumerate(iter[1:]):
-#                     if t - iter[i] == 1:
-#                         life += 1
-#                     elif t - iter[i] > 1:
-#                         lifetimes.append([iter[i],z,y,x,life])
-#                         life = 1
-#                 # if life > 1:
-#                 lifetimes.append([iter[-1],z,y,x,life])
-#     lifetimes = np.array(lifetimes)
-#     return lifetimes
-
-# def stable_px(image_4D, st_limit = 4, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
-#     lifetimes = px_lifetimes(image_4D)
-#     st_px = lifetimes[lifetimes[:,-1]>st_limit-1]
-#     stable_img = np.empty_like(image_4D)
-#     for px in st_px:
-#         z, y, x = px[1], px[2], px[3]
-#         for i in np.arange(px[-1]-st_limit,-1,-1):
-#             t = px[0] - i
-#             stable_img[t,z,y,x] = 1
-#     if save == True:
-#         if save_path != '' and save_path[-1] != '/':
-#             save_path += '/'
-#         if save_file == '':
-#             save_name = str(save_path+'stable_image.tif')
-#         else:
-#             save_name = str(save_path+'stable_'+save_file)
-#         if '.tif' not in save_name:
-#             save_name +='.tif'
-#         datautils.save_image(save_name, stable_img, xy_pixel=xy_pixel, z_pixel=z_pixel)
-#     return stable_img
-
-# def _4D_to_PC(img):
-#     limit = img.min() -1
-#     px = np.argwhere(img>limit)
-#     return px
-
-# def _PC_to_4D(PC, img_shape):
-#     img = np.zeros(img_shape)
-#     for px in PC:
-#         t,z,y,x = px[0],px[1],px[2],px[3]
-#         img[t,z,y,x] = 1
-#     return img
-
-# def trans_px_levels(lifetimes, stab_limit=4, start_t=36, plot=True, save=True, save_path='', save_file=''):
-#     """"
-#     takes 4D_image, where the values are the lifetimes of these pixels in the 4D_image
-#     """
-#     lifetimes = lifetimes.astype('float32')
-
-#     trans_Vol = []
-#     trans_per = []
-#     # trans_Vol = [0 for i in range(stab_limit-2)]
-#     # trans_per = [0 for i in range(stab_limit-2)]
-#     for stack in tqdm(lifetimes):
-#         all_px = len(stack[stack>0])
-#         transient = len(stack[(stack < stab_limit) & (stack > 0)])
-#         # stack[stack>0] = 1
-#         trans_Vol.append((all_px - transient))
-#         trans_per.append(((all_px - transient)/all_px))
-    
-#     # definning timepoints
-#     T_length = np.arange(len(lifetimes))
-#     timepoints = [start_t+(i*0.25) for i in T_length] 
-
-#     if save_path != '' and save_path[-1] != '/':
-#         save_path += '/'
-
-#     # convert results to dataframe
-#     output_transient = pd.DataFrame({'timepoints':timepoints,'transient_px_N':trans_Vol, 'transient_px_per':trans_per})
-
-#     if plot:
-#         fig_name = save_path+save_file+'_transient.pdf'
-#         #ploting the results
-#         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,10))
-#         ax1.plot(timepoints, output_transient.transient_px_N)
-#         ax1.set_title('Number of Transient Pixels')
-#         ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Number of Transient Pixels')
-#         ax2.plot(timepoints, output_transient.transient_px_per)
-#         ax2.set_title('Percentage of Transient Pixels')
-#         ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Percentage of Transient Pixels')
-#         plt.savefig(fig_name, bbox_inches='tight')
-#     if save == True:
-#         if save_file == '':
-#             save_file = "transient_Pxs.csv"
-#         csv_file = save_path+save_file
-#         output_transient.to_csv(csv_file, sep=';')
-    
-#     return output_transient
-
-# def trans_px_levels2(neuron, stable, start_t=36, plot=True, save=True, save_path='', save_file=''):
-#     """
-#     calculate number and percentage of transient pixels between stable neuron and all_neuron
-#     """
-#     neuron[neuron != 0] = 1
-#     stable[stable != 0] = 1
-#     neuron = neuron.astype('float32')
-#     stable = stable.astype('float32')
-
-#     transient = []
-#     trans_per = []
-#     # for t in tqdm(np.arange(stable.shape[0]), desc='calculating tansient'):
-#     for t in np.arange(stable.shape[0]):
-#         transient.append((neuron[t].sum()-stable[t].sum()))
-#         trans_per.append((neuron[t].sum()-stable[t].sum())/neuron[t].sum())
-
-#     # definning timepoints
-#     T_length = np.arange(len(transient))
-#     timepoints = [start_t+(i*0.25) for i in T_length] 
-
-#     if save_path != '' and save_path[-1] != '/':
-#         save_path += '/'
-
-#     output_transient = pd.DataFrame({'timepoints':timepoints,'transient_px_N':transient, 'transient_px_%':trans_per})
-
-#     if plot:
-#         fig_name = save_path+save_file+'_transient.pdf'
-#         #ploting the results
-#         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,10))
-#         ax1.plot(timepoints, transient)
-#         ax1.set_title('Number of Transient Pixels')
-#         ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Number of Transient Pixels')
-#         ax2.plot(timepoints, trans_per)
-#         ax2.set_title('Percentage of Transient Pixels')
-#         ax1.set(xlabel="Hours After Puparium Formation [h]", ylabel='Percentage of Transient Pixels')
-#         plt.savefig(fig_name, bbox_inches='tight')
-    
-#     if save == True:
-#         if save_file == '':
-#             save_file = "transient_Pxs.csv"
-#         csv_file = save_path+save_file
-#         output_transient.to_csv(csv_file, sep=';')
-#         # if '.csv' not in csv_file:
-#         #     csv_file +='.csv'
-#         # with open(csv_file, 'w', newline='') as csvfile:
-#         #     fieldnames = ['timepoint', 'No. of transient', 'percentage']
-#         #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#         #     writer.writeheader()
-#         #     for t, val in enumerate(transient):
-#         #         writer.writerow({'timepoint' : timepoints[t], 'No. of transient' : val, 'percentage': trans_per[t]})
-#         # csvfile.close()
-    
-#     return output_transient
+        occupancy.to_csv(csv_file, sep=';')
+    return occupancy

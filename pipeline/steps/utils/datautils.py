@@ -17,7 +17,7 @@ def save_image(name, image, xy_pixel=0.0764616, z_pixel=0.4):
     # if image.dtype != 'uint16': ###this part to be omitted later
     #     print('image type is not uint16')
     #     image = image.astype('uint16')
-    tif.imwrite(name, image, bigtiff=True, dtype=image.dtype, resolution=(1./xy_pixel, 1./xy_pixel),
+    tif.imwrite(name, image, imagej=True, dtype=image.dtype, resolution=(1./xy_pixel, 1./xy_pixel),
                 metadata={'spacing': z_pixel, 'unit': 'um', 'finterval': 1/10,'axes': dim})
     return
 
@@ -78,7 +78,6 @@ def files_to_4D(files_list, ch_names=[''], filter=True,
     and convert them into a dict of 4D-arrays of the identified ch
     has the option of saving is as 8uint image
     """
-    start_time = timer()
     image_4D = {ch:[] for ch in ch_names}
     files_list.sort()
     for file in tqdm(files_list, desc = 'compiling_files', leave=False):
@@ -108,7 +107,6 @@ def files_to_4D(files_list, ch_names=[''], filter=True,
             if os.path.splitext(save_name)[-1] not in ['.tif','.tiff']:
                 save_name += '.tif'
             save_image(save_name, img, xy_pixel=xy_pixel, z_pixel=z_pixel)
-    print('files_to_4D runtime', timer()-start_time)
     return image_4D
 
 def read_files(path, group_by ,compile=True, ch_names=[''], order=True, 
