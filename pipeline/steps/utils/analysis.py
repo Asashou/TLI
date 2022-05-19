@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from textwrap import wrap
 import csv
 import pandas as pd
+import matplotlib.pyplot as plt
+import tifffile as tif
+from read_roi import read_roi_zip as co_zip
+import cv2
 
 def cal_lifetimes(neuron, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     """
@@ -154,45 +158,88 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     
     return DGIs
 
-def col_occupancy(neuron, cols, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
-    cols_hist = {}
-    ind = 0
-    for col in tqdm(cols, desc='calculating Col occupancy', leave=False):
-        ind += 1
-        cols_hist['col_'+str(ind)] = []
-        filter = np.broadcast_to(col, neuron.shape)
-        filter = filter.copy()
-        filter -= filter.min()
-        filter = filter/filter.max()
-        col_size = filter.sum()
-        nue_sub = filter * neuron # pixels occupied by neuron in the column
-        for t in tqdm(nue_sub, leave=False):
-            cols_hist['col_'+str(ind)].append(t.sum()/col_size)
-    #convert the results to dataframe
-    occupancy = pd.DataFrame(cols_hist)  
+def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
+    # T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
     # definning timepoints
-    T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
-    occupancy['timepoints'] = [start_t+(i*0.25) for i in range(0,len(occupancy.index))] 
+    cols_occ = {'timepoints': [start_t+(i*0.25) for i in range(0,len(occupancy.index))]}
+    for key, val in tqdm(cols_zip.items()):
+        if val['type'] == 'oval':
+            x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
+            y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
+            x = np.linspace(0, neuron.shape[-2],neuron.shape[-1])  # x values of interest
+            y = np.linspace(0, neuron.shape[-2],neuron.shape[-1])[:,None]  # y values of interest, as a "column" array
+            column = ((x-x0)/a)**2 + ((y-y0)/b)**2 <= 1  # True for points inside the ellipse
+            column = column.astype(int)
+        elif val['type'] == 'freehand':
+            rois = np.array(list(zip(val['x'],val['y'])))
+            rois = rois.astype(int)
+            column = np.zeros([neuron.shape[-2],neuron.shape[-1]])
+            column = cv2.fillPoly(column, pts =[rois], color=(255,255,255))
+            column[column>0] = 1
+        col_filter = np.broadcast_to(column, neuron.shape)
+        col_size = col_filter.sum()
+        nue_sub = col_filter * neuron # pixels occupied by neuron in the column
+        cols_occ[key] =  nue_sub.sum(axis=(1,2,3))
+    cols_occ = pd.DataFrame(cols_occ)
     if save_path != '' and save_path[-1] != '/':
         save_path += '/'
     if plot:
         fig_name = save_path+save_file+'_col_occupancy.pdf'
         #ploting the results
         plt.figure(figsize=(8, 6), dpi=80)
-        cols = list(cols_hist.keys())
-        for col in cols:
-            plt.plot(occupancy.timepoints, occupancy[col], label=col)
+        col_names = list(cols_occ.loc[:, cols_occ.columns != 'timepoints'].columns)
+        plt.plot(cols_occ.timepoints, cols_occ.loc[:, cols_occ.columns != 'timepoints'])
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.title('Column Occupancy')
         plt.ylabel("\n".join(wrap('Column Occupancy [a.u.]',30)))
         plt.xlabel("Hours After Puparium Formation [h]")
         plt.savefig(fig_name, bbox_inches='tight')
-    
     if save == True:
         if save_file == '':
             save_file = "col_occupancy.csv"
         csv_file = save_path+save_file
         if '.csv' not in csv_file:
             csv_file +='.csv'
-        occupancy.to_csv(csv_file, sep=';')
-    return occupancy
+        cols_occ.to_csv(csv_file, sep=';')
+    return cols_occ
+
+
+    # for col in tqdm(cols, desc='calculating Col occupancy', leave=False):
+    #     ind += 1
+    #     cols_hist['col_'+str(ind)] = []
+    #     filter = np.broadcast_to(col, neuron.shape)
+    #     filter = filter.copy()
+    #     filter -= filter.min()
+    #     filter = filter/filter.max()
+    #     col_size = filter.sum()
+    #     nue_sub = filter * neuron # pixels occupied by neuron in the column
+    #     for t in tqdm(nue_sub, leave=False):
+    #         cols_hist['col_'+str(ind)].append(t.sum()/col_size)
+    # #convert the results to dataframe
+    # occupancy = pd.DataFrame(cols_hist)  
+    # # definning timepoints
+    # T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
+    # occupancy['timepoints'] = [start_t+(i*0.25) for i in range(0,len(occupancy.index))] 
+    # if save_path != '' and save_path[-1] != '/':
+    #     save_path += '/'
+    # if plot:
+    #     fig_name = save_path+save_file+'_col_occupancy.pdf'
+    #     #ploting the results
+    #     plt.figure(figsize=(8, 6), dpi=80)
+    #     cols = list(cols_hist.keys())
+    #     for col in cols:
+    #         plt.plot(occupancy.timepoints, occupancy[col], label=col)
+    #     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    #     plt.title('Column Occupancy')
+    #     plt.ylabel("\n".join(wrap('Column Occupancy [a.u.]',30)))
+    #     plt.xlabel("Hours After Puparium Formation [h]")
+    #     plt.savefig(fig_name, bbox_inches='tight')
+    
+    # if save == True:
+    #     if save_file == '':
+    #         save_file = "col_occupancy.csv"
+    #     csv_file = save_path+save_file
+    #     if '.csv' not in csv_file:
+    #         csv_file +='.csv'
+    #     occupancy.to_csv(csv_file, sep=';')
+    # return occupancy
