@@ -1,4 +1,4 @@
-from importlib.abc import Traversable
+# from importlib.abc import Traversable
 from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
@@ -183,7 +183,7 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
 def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
     # T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
     # definning timepoints
-    cols_occ = {'timepoints': [start_t+(i*0.25) for i in range(0,len(occupancy.index))]}
+    cols_occ = {'timepoints': [start_t+(i*0.25) for i in range(0,neuron.shape[0])]}
     for key, val in tqdm(cols_zip.items()):
         if val['type'] == 'oval':
             x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
@@ -201,7 +201,7 @@ def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True
         col_filter = np.broadcast_to(column, neuron.shape)
         col_size = col_filter.sum()
         nue_sub = col_filter * neuron # pixels occupied by neuron in the column
-        cols_occ[key] =  nue_sub.sum(axis=(1,2,3))
+        cols_occ[key] =  nue_sub.sum(axis=(1,2,3))/col_size
     cols_occ = pd.DataFrame(cols_occ)
     if save_path != '' and save_path[-1] != '/':
         save_path += '/'
