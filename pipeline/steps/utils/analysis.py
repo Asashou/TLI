@@ -107,6 +107,21 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
         output_volumes.to_csv(csv_file, sep=';')
     return output_volumes
 
+def vect_alpha(vect, ref):
+    """
+    This function takes a point cloud of (N,D) and calculates the angles between these vectors and the ref vector (tuple)
+    all vectors are assumed to start from center
+    return angles calculated as numpy (N,1)
+    """
+    vec_norm = np.linalg.norm(vect, axis=1)
+    unit_vector_1 = vect/vec_norm[:,None]
+    unit_vector_2 = ref / np.linalg.norm(ref)
+    dot_product = np.dot(unit_vector_1, unit_vector_2[:,None])
+    angle = np.arccos(dot_product)
+    vect_deg = np.degrees(angle)
+    return vect_deg
+
+
 def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save_file=''):
     """
     This function takes a 4D array of a neuron and calculates its directional growth indext (DGI) from the entry point based on the the formula:
@@ -121,35 +136,42 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     neuron:         4D array containing the dendrite to analyze. It should only contain parts of the dendrite.
     """
     pixel_co = np.argwhere(neuron>0)
+    # shifting all points to make entry point the center of (0,0,0,0)
     norm_pixel_values = np.zeros(pixel_co.shape)
-    norm_pixel_values[:,0] = pixel_co[:,0]
-    norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
-    norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
-    norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
-    norm_pixel_values[:,2] *= -1
+    norm_pixel_values = pixel_co - entry_point
+    # norm_pixel_values[:,0] = pixel_co[:,0]
+    # norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
+    # norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
+    # norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
+    norm_pixel_values[:,2] *= -1 ##### to reverse the Y axis numbering upward 
 
-    DGIs = pd.DataFrame(columns=['timepoints','Ori_Vec_Y','Ori_Vec_X', 'Ori_Vec_Length', 'DGI'])
+    DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 'ori_vec_deg', 'deg_variance', 'DGI']
+    DGIs = pd.DataFrame(columns=DGIs_columns)
     for i in range(int(max(norm_pixel_values[:,0]))):
         age = i*0.25+start_t
         timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
-        timepoint = np.delete(timepoint,0,1)
-        timepoint = np.delete(timepoint,0,1)
-        vec_length = np.linalg.norm(timepoint, axis=1)
+        timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
+        # timepoint = np.delete(timepoint,0,1) # deleting the Z compoenet/axis, WHY?
+        vec_length = np.linalg.norm(timepoint, axis=1) # maximun length of all vectors
         dbp_index = np.argwhere(vec_length == 0)
         timepoint = np.delete(timepoint, (dbp_index), axis=0)
         vec_length = np.delete(vec_length, dbp_index)
-        ori_vec = timepoint.sum(axis=0)
-        ori_vec_length = np.linalg.norm(ori_vec)
-        DGI = np.divide(ori_vec_length, vec_length.sum())
-        Info = np.zeros([1,5])
+        ori_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
+        ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
+        Dgi = np.divide(ori_vec_length, vec_length.sum()) #calculate DGI which is maximum_length/length_vect_sum 
+        ref_vect = (0,1,0)
+        ori_vec_deg = vect_alpha(ori_vec[:,None].T, ref_vect)[0]
+        norm_pixel_deg = vect_alpha(timepoint, ref_vect) - ori_vec_deg
+        deg_variance = norm_pixel_deg.var()
+        Info = np.zeros([1,6])
         Info[0,0] = age
-        Info[0,1] = ori_vec[0]
-        Info[0,2] = ori_vec[1]
-        Info[0,3] = ori_vec_length
-        Info[0,4] = DGI
-        DGIs = DGIs.append(pd.DataFrame(Info,
-                                columns=['timepoints','Ori_Vec_Y','Ori_Vec_X','Ori_Vec_Length','DGI']
-                                ))
+        Info[0,1] = ori_vec
+        Info[0,2] = vec_length.sum()
+        Info[0,3] = ori_vec_deg
+        Info[0,4] = deg_variance
+        Info[0,5] = Dgi
+        DGIs = DGIs.append(pd.DataFrame(Info, columns=DGIs_columns))
+
     if save == True:
         if save_file == '':
             save_file = "DGIs.csv"
