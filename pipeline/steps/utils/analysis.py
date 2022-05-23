@@ -144,10 +144,9 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     # norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
     # norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
     norm_pixel_values[:,2] *= -1 ##### to reverse the Y axis numbering upward 
-
     DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 'ori_vec_deg', 'deg_variance', 'DGI']
     DGIs = pd.DataFrame(columns=DGIs_columns)
-    for i in range(int(max(norm_pixel_values[:,0]))):
+    for i in tqdm(range(int(max(norm_pixel_values[:,0])))):
         age = i*0.25+start_t
         timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
@@ -210,7 +209,8 @@ def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True
         #ploting the results
         plt.figure(figsize=(8, 6), dpi=80)
         col_names = list(cols_occ.loc[:, cols_occ.columns != 'timepoints'].columns)
-        plt.plot(cols_occ.timepoints, cols_occ.loc[:, cols_occ.columns != 'timepoints'])
+        cols_occ.plot(x='my_timestampe', y=col_names, kind='line')
+        # plt.plot(cols_occ.timepoints, cols_occ.loc[:, cols_occ.columns != 'timepoints'])
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.title('Column Occupancy')
         plt.ylabel("\n".join(wrap('Column Occupancy [a.u.]',30)))
