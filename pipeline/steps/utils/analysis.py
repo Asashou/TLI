@@ -1,4 +1,5 @@
 # from importlib.abc import Traversable
+from timeit import default_timer as timer
 from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
@@ -159,9 +160,12 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
         ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
         Dgi = np.divide(ori_vec_length, vec_length.sum()) #calculate DGI which is maximum_length/length_vect_sum 
         ref_vect = (0,1,0)
+        print('before')
+        start_time = timer()
         ori_vec_deg = vect_alpha(ori_vec[:,None].T, ref_vect)[0]
         norm_pixel_deg = vect_alpha(timepoint, ref_vect) - ori_vec_deg
         deg_variance = norm_pixel_deg.var()
+        print('after', timer() - start_time)
         Info = np.zeros([1,6])
         Info[0,0] = age
         Info[0,1] = ori_vec
