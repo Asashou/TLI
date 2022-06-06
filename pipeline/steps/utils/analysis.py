@@ -116,53 +116,21 @@ def vect_alpha(vect, ref=(0,1,0)):
     all vectors are assumed to start from center
     return angles calculated as numpy (N,1)
     """
-    # if len(vect.shape)>1:
-    #     vect = vect.ravel()
-    vec_norm = np.linalg.norm(vect, axis=1)
-    unit_vector_1 = vect/vec_norm[:,None]
+    # print(vect, ref)
+    if len(vect.shape)>1:
+        vect = vect.ravel()
+    # vec_norm = np.linalg.norm(vect, axis=1)
+    # unit_vector_1 = vect/vec_norm[:,None]
     unit_vector_1 = vect / np.linalg.norm(vect)
     unit_vector_2 = ref / np.linalg.norm(ref)
-    dot_product = np.dot(unit_vector_1, unit_vector_2[:,None])
+    dot_product = np.dot(unit_vector_1, unit_vector_2)
     # dot_product = np.dot(unit_vector_1, unit_vector_2)
     angle = np.arccos(dot_product)
     vect_deg = np.degrees(angle)
-    # print(vect)
-    if vect[-1,-1]<0:
+    if vect[-1]<0:
         vect_deg = 360 - vect_deg
-    return vect_deg
-
-def findClockwiseAngle(vect, ref=(0,1,0)):
-    """
-    This function takes a point cloud of (N,D) and calculates the angles between these vectors and the ref vector (tuple)
-    all vectors are assumed to start from center
-    return angles calculated as numpy (N,1)
-    """
-    vec_norm = np.linalg.norm(vect, axis=1)
-    unit_vector_1 = vect/vec_norm[:,None]
-    unit_vector_2 = ref / np.linalg.norm(ref)
-    dot_product = np.dot(unit_vector_1, unit_vector_2[:,None])
-    angle = np.arcsin(dot_product)
-    vect_deg = np.degrees(angle)
     # print(vect_deg)
     return vect_deg
-
-# def angle_clockwise(vect, ref=(0,1,0)):
-#     # print(vect.shape, vect)
-#     if len(vect.shape)>1:
-#         vect = vect.ravel()
-#     dot = vect[0]*ref[0] + vect[1]*ref[1] + vect[2]*ref[2]    #between [x1, y1, z1] and [x2, y2, z2]
-#     lenSq1 = ref[0]*ref[0] + ref[1]*ref[1] + ref[2]*ref[2] 
-#     lenSq2 = vect[0]*vect[0] + vect[1]*vect[1] + vect[2]*vect[2] 
-#     angle = np.arccos(dot/np.sqrt(lenSq1 * lenSq2))
-#     return angle
-#     ang1 = np.arctan2(*p1[::-1])
-#     ang2 = np.arctan2(*p2[::-1])
-#     return np.rad2deg((ang1 - ang2) % (2 * np.pi))
-
-# from math import atan2, degrees
-# def anti_clockwise(x,y):
-#     alpha = degrees(atan2(y,x))
-#     return (alpha + 360) % 360
 
 def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save_file=''):
     """
@@ -180,19 +148,13 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     pixel_co = np.argwhere(neuron>0)
     # shifting all points to make entry point the center of (0,0,0,0)
     norm_pixel_values = np.zeros(pixel_co.shape)
-    # norm_pixel_values = pixel_co - entry_point
-    norm_pixel_values[:,0] = pixel_co[:,0]
-    norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
-    norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
-    norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
+    norm_pixel_values = pixel_co - entry_point
     norm_pixel_values[:,2] *= -1 ##### to reverse the Y axis numbering upward 
-    # DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 'ori_vec_deg', 'deg_variance', 'DGI']
     output = []
-    # DGIs = pd.DataFrame(columns=DGIs_columns)
     for i in tqdm(range(int(max(norm_pixel_values[:,0])+1))):
         # print('round', i)
         age = i*0.25+start_t
-        timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
+        timepoint = norm_pixel_values[norm_pixel_values[:,0]== i]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
         # timepoint = np.delete(timepoint,0,1) # deleting the Z compoenet/axis, WHY?
         vec_length = np.linalg.norm(timepoint, axis=1) # sum all points_vectors (maximum length)
@@ -204,26 +166,16 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
         Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
         av_vect = timepoint.mean(axis=0)
         av_vect_length = np.linalg.norm(av_vect)
-        # ref_vect = (0,1,0)
-        # print('before')
-        # start_time = timer()
-        # print(i, ori_vec.shape, ori_vec[:,None].T[-1,-1])
-        ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
-        # print(ori_vec_deg)
-        norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
-        deg_variance = norm_pixel_deg.var()
-        # print(norm_pixel_deg.shape, deg_variance)
-        # print('after', timer() - start_time)
+        # print(ori_vec)
+        ori_vec_deg = vect_alpha(ori_vec[:,])
+        # ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
+        norm_px_deg = []
+        for px in timepoint:
+            norm_px_deg.append(vect_alpha(px) - ori_vec_deg)
+        deg_variance = np.var(norm_px_deg)
+        # norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
+        # deg_variance = norm_pixel_deg.var()
         output.append([age,ori_vec,vec_length.sum(), av_vect, av_vect_length, ori_vec_deg,deg_variance,Dgi])
-        # print('finished round', i)
-        # Info = np.zeros([1,6])
-        # Info[0,0] = age
-        # Info[0,1] = ori_vec
-        # Info[0,2] = vec_length.sum()
-        # Info[0,3] = ori_vec_deg
-        # Info[0,4] = deg_variance
-        # Info[0,5] = Dgi
-        # DGIs = DGIs.append(pd.DataFrame(Info, columns=DGIs_columns))
     DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 
                     'av_vect', 'av_vect_length', 
                     'ori_vec_deg', 'deg_variance', 'DGI']
@@ -341,7 +293,11 @@ def transform_point(y=200, x=80,
             y_f, x_f = 0, 0
     return y_f, x_f
 
-def col_occupancy(neuron, cols_zip, norm_cols, normalize_cols=False, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
+def col_occupancy(neuron, cols_zip, 
+                  norm_cols, normalize_cols=False, 
+                  nor_fact=1, start_t=36, plot=True, 
+                  save=True, save_path='', 
+                  save_file=''):
     # definning timepoints
     cols_occ = {'timepoints': [start_t+(i*0.25) for i in range(0,neuron.shape[0])]}
     # if normalize_cols:
@@ -350,8 +306,8 @@ def col_occupancy(neuron, cols_zip, norm_cols, normalize_cols=False, nor_fact=1,
         if val['type'] == 'oval':
             x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
             y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
-            X = np.linspace(0, neuron.shape[-1],neuron.shape[-1])  # x values of interest
-            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-2])[:,None]  # y values of interest, as a "column" array
+            X = np.linspace(0, neuron.shape[-2],neuron.shape[-1])  # x values of interest
+            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-1])[:,None]  # y values of interest, as a "column" array
             column = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
             column = column.astype(int)
         elif val['type'] == 'freehand':
@@ -411,44 +367,3 @@ def col_occupancy(neuron, cols_zip, norm_cols, normalize_cols=False, nor_fact=1,
             csv_file +='.csv'
         cols_occ.to_csv(csv_file, sep=';')
     return cols_occ
-
-
-    # for col in tqdm(cols, desc='calculating Col occupancy', leave=False):
-    #     ind += 1
-    #     cols_hist['col_'+str(ind)] = []
-    #     filter = np.broadcast_to(col, neuron.shape)
-    #     filter = filter.copy()
-    #     filter -= filter.min()
-    #     filter = filter/filter.max()
-    #     col_size = filter.sum()
-    #     nue_sub = filter * neuron # pixels occupied by neuron in the column
-    #     for t in tqdm(nue_sub, leave=False):
-    #         cols_hist['col_'+str(ind)].append(t.sum()/col_size)
-    # #convert the results to dataframe
-    # occupancy = pd.DataFrame(cols_hist)  
-    # # definning timepoints
-    # T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
-    # occupancy['timepoints'] = [start_t+(i*0.25) for i in range(0,len(occupancy.index))] 
-    # if save_path != '' and save_path[-1] != '/':
-    #     save_path += '/'
-    # if plot:
-    #     fig_name = save_path+save_file+'_col_occupancy.pdf'
-    #     #ploting the results
-    #     plt.figure(figsize=(8, 6), dpi=80)
-    #     cols = list(cols_hist.keys())
-    #     for col in cols:
-    #         plt.plot(occupancy.timepoints, occupancy[col], label=col)
-    #     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    #     plt.title('Column Occupancy')
-    #     plt.ylabel("\n".join(wrap('Column Occupancy [a.u.]',30)))
-    #     plt.xlabel("Hours After Puparium Formation [h]")
-    #     plt.savefig(fig_name, bbox_inches='tight')
-    
-    # if save == True:
-    #     if save_file == '':
-    #         save_file = "col_occupancy.csv"
-    #     csv_file = save_path+save_file
-    #     if '.csv' not in csv_file:
-    #         csv_file +='.csv'
-    #     occupancy.to_csv(csv_file, sep=';')
-    # return occupancy
