@@ -306,8 +306,8 @@ def col_occupancy(neuron, cols_zip,
         if val['type'] == 'oval':
             x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
             y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
-            X = np.linspace(0, neuron.shape[-2],neuron.shape[-1])  # x values of interest
-            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-1])[:,None]  # y values of interest, as a "column" array
+            X = np.linspace(0, neuron.shape[-1],neuron.shape[-1])  # x values of interest
+            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-2])[:,None]  # y values of interest, as a "column" array
             column = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
             column = column.astype(int)
         elif val['type'] == 'freehand':
