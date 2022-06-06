@@ -1,5 +1,7 @@
 # from importlib.abc import Traversable
+from cProfile import label
 from timeit import default_timer as timer
+from turtle import shape
 from tqdm import tqdm
 import numpy as np
 import utils.datautils as datautils
@@ -108,7 +110,28 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
         output_volumes.to_csv(csv_file, sep=';')
     return output_volumes
 
-def vect_alpha(vect, ref):
+def vect_alpha(vect, ref=(0,1,0)):
+    """
+    This function takes a point cloud of (N,D) and calculates the angles between these vectors and the ref vector (tuple)
+    all vectors are assumed to start from center
+    return angles calculated as numpy (N,1)
+    """
+    # if len(vect.shape)>1:
+    #     vect = vect.ravel()
+    vec_norm = np.linalg.norm(vect, axis=1)
+    unit_vector_1 = vect/vec_norm[:,None]
+    unit_vector_1 = vect / np.linalg.norm(vect)
+    unit_vector_2 = ref / np.linalg.norm(ref)
+    dot_product = np.dot(unit_vector_1, unit_vector_2[:,None])
+    # dot_product = np.dot(unit_vector_1, unit_vector_2)
+    angle = np.arccos(dot_product)
+    vect_deg = np.degrees(angle)
+    # print(vect)
+    if vect[-1,-1]<0:
+        vect_deg = 360 - vect_deg
+    return vect_deg
+
+def findClockwiseAngle(vect, ref=(0,1,0)):
     """
     This function takes a point cloud of (N,D) and calculates the angles between these vectors and the ref vector (tuple)
     all vectors are assumed to start from center
@@ -118,10 +141,28 @@ def vect_alpha(vect, ref):
     unit_vector_1 = vect/vec_norm[:,None]
     unit_vector_2 = ref / np.linalg.norm(ref)
     dot_product = np.dot(unit_vector_1, unit_vector_2[:,None])
-    angle = np.arccos(dot_product)
+    angle = np.arcsin(dot_product)
     vect_deg = np.degrees(angle)
+    # print(vect_deg)
     return vect_deg
 
+# def angle_clockwise(vect, ref=(0,1,0)):
+#     # print(vect.shape, vect)
+#     if len(vect.shape)>1:
+#         vect = vect.ravel()
+#     dot = vect[0]*ref[0] + vect[1]*ref[1] + vect[2]*ref[2]    #between [x1, y1, z1] and [x2, y2, z2]
+#     lenSq1 = ref[0]*ref[0] + ref[1]*ref[1] + ref[2]*ref[2] 
+#     lenSq2 = vect[0]*vect[0] + vect[1]*vect[1] + vect[2]*vect[2] 
+#     angle = np.arccos(dot/np.sqrt(lenSq1 * lenSq2))
+#     return angle
+#     ang1 = np.arctan2(*p1[::-1])
+#     ang2 = np.arctan2(*p2[::-1])
+#     return np.rad2deg((ang1 - ang2) % (2 * np.pi))
+
+# from math import atan2, degrees
+# def anti_clockwise(x,y):
+#     alpha = degrees(atan2(y,x))
+#     return (alpha + 360) % 360
 
 def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save_file=''):
     """
@@ -139,41 +180,54 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     pixel_co = np.argwhere(neuron>0)
     # shifting all points to make entry point the center of (0,0,0,0)
     norm_pixel_values = np.zeros(pixel_co.shape)
-    norm_pixel_values = pixel_co - entry_point
-    # norm_pixel_values[:,0] = pixel_co[:,0]
-    # norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
-    # norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
-    # norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
+    # norm_pixel_values = pixel_co - entry_point
+    norm_pixel_values[:,0] = pixel_co[:,0]
+    norm_pixel_values[:,1] = pixel_co[:,1] - entry_point[1]
+    norm_pixel_values[:,2] = pixel_co[:,2] - entry_point[2]
+    norm_pixel_values[:,3] = pixel_co[:,3] - entry_point[3]
     norm_pixel_values[:,2] *= -1 ##### to reverse the Y axis numbering upward 
-    DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 'ori_vec_deg', 'deg_variance', 'DGI']
-    DGIs = pd.DataFrame(columns=DGIs_columns)
-    for i in tqdm(range(int(max(norm_pixel_values[:,0])))):
+    # DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 'ori_vec_deg', 'deg_variance', 'DGI']
+    output = []
+    # DGIs = pd.DataFrame(columns=DGIs_columns)
+    for i in tqdm(range(int(max(norm_pixel_values[:,0])+1))):
+        # print('round', i)
         age = i*0.25+start_t
         timepoint = norm_pixel_values[int(np.argwhere(norm_pixel_values[:,0]==i)[0]):int(np.argwhere(norm_pixel_values[:,0]==i)[-1]),:]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
         # timepoint = np.delete(timepoint,0,1) # deleting the Z compoenet/axis, WHY?
-        vec_length = np.linalg.norm(timepoint, axis=1) # maximun length of all vectors
+        vec_length = np.linalg.norm(timepoint, axis=1) # sum all points_vectors (maximum length)
         dbp_index = np.argwhere(vec_length == 0)
         timepoint = np.delete(timepoint, (dbp_index), axis=0)
         vec_length = np.delete(vec_length, dbp_index)
         ori_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
         ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
-        Dgi = np.divide(ori_vec_length, vec_length.sum()) #calculate DGI which is maximum_length/length_vect_sum 
-        ref_vect = (0,1,0)
-        print('before')
-        start_time = timer()
-        ori_vec_deg = vect_alpha(ori_vec[:,None].T, ref_vect)[0]
-        norm_pixel_deg = vect_alpha(timepoint, ref_vect) - ori_vec_deg
+        Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
+        av_vect = timepoint.mean(axis=0)
+        av_vect_length = np.linalg.norm(av_vect)
+        # ref_vect = (0,1,0)
+        # print('before')
+        # start_time = timer()
+        # print(i, ori_vec.shape, ori_vec[:,None].T[-1,-1])
+        ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
+        # print(ori_vec_deg)
+        norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
         deg_variance = norm_pixel_deg.var()
-        print('after', timer() - start_time)
-        Info = np.zeros([1,6])
-        Info[0,0] = age
-        Info[0,1] = ori_vec
-        Info[0,2] = vec_length.sum()
-        Info[0,3] = ori_vec_deg
-        Info[0,4] = deg_variance
-        Info[0,5] = Dgi
-        DGIs = DGIs.append(pd.DataFrame(Info, columns=DGIs_columns))
+        # print(norm_pixel_deg.shape, deg_variance)
+        # print('after', timer() - start_time)
+        output.append([age,ori_vec,vec_length.sum(), av_vect, av_vect_length, ori_vec_deg,deg_variance,Dgi])
+        # print('finished round', i)
+        # Info = np.zeros([1,6])
+        # Info[0,0] = age
+        # Info[0,1] = ori_vec
+        # Info[0,2] = vec_length.sum()
+        # Info[0,3] = ori_vec_deg
+        # Info[0,4] = deg_variance
+        # Info[0,5] = Dgi
+        # DGIs = DGIs.append(pd.DataFrame(Info, columns=DGIs_columns))
+    DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 
+                    'av_vect', 'av_vect_length', 
+                    'ori_vec_deg', 'deg_variance', 'DGI']
+    DGIs = pd.DataFrame(output, columns=DGIs_columns)
 
     if save == True:
         if save_file == '':
@@ -183,17 +237,122 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     
     return DGIs
 
-def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
-    # T_length = np.arange(len(cols_hist[list(cols_hist.keys())[0]]))
+
+def transform_point(y=200, x=80, 
+                    x0=80, y0=120, #center of ellipse1 
+                    a0=50, b0=100, #major and minor of ellispe1
+                    x1=30, y1=45, #center of ellipse2 (ref)
+                    a1=20, b1=40, # major and minor of ellipse2
+                    X_length=150, #X_dim of final array
+                    Y_length=250): #Y_dim of final array
+    """
+    This function transform the  y,x coordinates of a point in ellipse1 
+    to y_f,x_f coordinate of the corresponding point in ellipse2
+    INPUT: y,x coordinates of the point in ellipse1 
+           y0,x0,a0,b0 center and dimaters of ellipse1 
+           y1,x1,a1,b1 center and dimaters of ellipse2
+    Returns y_f, x_f coordinates of the corresponding point in ellipse2
+    NOTE: the point has to be inside the ellipse1 and not on the boarder
+    """
+
+    #definning start point for calculating angle
+    S_radian = np.radians(0)
+    Sy0, Sx0 = int(y0+b0*np.sin(S_radian)), int(x0+a0*np.cos(S_radian))
+    
+    #getting angle (in radians) between start and point-of-interest
+    vect, ref = (y-y0,x-x0), (Sy0-y0,Sx0-x0)
+    unit_vector_1 = vect/np.linalg.norm(vect)
+    unit_vector_2 = ref / np.linalg.norm(ref)
+    dot_product = np.dot(unit_vector_1, unit_vector_2)
+    p_radian = np.arccos(dot_product)
+    p_deg = np.degrees(p_radian)
+    #finding the cross point in ellipse1 based on the angle, center and diameters
+    if p_deg == 90.0:
+        Px0 = x0
+        if y > y0:
+            Py0 = y0 + b0
+        else:
+            Py0 = y0 - b0
+    else:
+        try:
+            for i in [0]:
+                if vect[-1]<0:
+                    Px0 = int(x0-a0*b0/(np.sqrt(b0**2+a0**2*np.tan(p_radian)**2))) 
+                else:
+                    Px0 = int(x0+a0*b0/(np.sqrt(b0**2+a0**2*np.tan(p_radian)**2))) 
+                if vect[0]<0:
+                    Py0 = y0-int(np.sqrt((np.tan(p_radian)*(Px0-x0))**2))
+                else:
+                    Py0 = y0+int(np.sqrt((np.tan(p_radian)*(Px0-x0))**2))
+        except:
+            for i in [0]:
+                print('failed at step Px0 because radian', p_radian, y,x)
+                Px0 = 0
+                Py0 = 0
+    # calculating ratio of point length to cross length
+    cross = (Py0-y0,Px0-x0)
+    vect_length = np.linalg.norm(vect)
+    cross_length = np.linalg.norm(cross)
+    ratio = vect_length/cross_length 
+
+    #finding the cross point in ellipse2 based on the angle, center and diameters
+    if p_deg == 90.0:
+        Px1 = x1
+        if y > y1:
+            Py1 = y1 + b1
+        else:
+            Py1 = y1 - b1
+    else:
+        try:
+            for i in [0]:
+                if vect[-1]<0:
+                    Px1 = x1-int(a1*b1/(np.sqrt(b1**2+a1**2*np.tan(p_radian)**2))) 
+                else:
+                    Px1 = x1+int(a1*b1/(np.sqrt(b1**2+a1**2*np.tan(p_radian)**2))) 
+                if vect[0]<0:
+                    Py1 = y1-int(np.tan(p_radian)*(Px1-x1))
+                else:
+                    Py1 = y1+int(np.tan(p_radian)*(Px1-x1))
+        except:
+            for i in [0]:
+                print("this point didn't work", p_radian, x, y)
+                Px1 = 0
+                Py1 = 0
+    
+    # calculating cross point to ellipse2 and point_length
+    cross2 = (Py1-y1,Px1-x1)
+    cross2_length = np.linalg.norm(cross2)
+    vect2_length = ratio*cross2_length
+
+    # x_f, x_f coordinated of the transformed point from ellipse1 to ellipse2
+    try:
+        for i in [0]:
+            if Py1 < y1:
+                y_f = y1-int(vect2_length*np.sqrt(np.sin(p_radian)**2))
+            else:
+                y_f = y1+int(vect2_length*np.sqrt(np.sin(p_radian)**2))
+            if Px1 < x1:
+                x_f = x1-int(vect2_length*np.sqrt(np.cos(p_radian)**2))
+            else:
+                x_f = x1+int(vect2_length*np.sqrt(np.cos(p_radian)**2))
+    except:
+        for i in [0]:
+            print("this point wasn't transformed", x, y)
+            y_f, x_f = 0, 0
+    return y_f, x_f
+
+def col_occupancy(neuron, cols_zip, norm_cols, normalize_cols=False, nor_fact=1, start_t=36, plot=True, save=True, save_path='', save_file=''):
     # definning timepoints
     cols_occ = {'timepoints': [start_t+(i*0.25) for i in range(0,neuron.shape[0])]}
+    # if normalize_cols:
+    #     norm_output = np.zeros_like(neuron[0,0])
     for key, val in tqdm(cols_zip.items()):
         if val['type'] == 'oval':
             x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
             y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
-            x = np.linspace(0, neuron.shape[-2],neuron.shape[-1])  # x values of interest
-            y = np.linspace(0, neuron.shape[-2],neuron.shape[-1])[:,None]  # y values of interest, as a "column" array
-            column = ((x-x0)/a)**2 + ((y-y0)/b)**2 <= 1  # True for points inside the ellipse
+            X = np.linspace(0, neuron.shape[-1],neuron.shape[-1])  # x values of interest
+            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-2])[:,None]  # y values of interest, as a "column" array
+            column = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
             column = column.astype(int)
         elif val['type'] == 'freehand':
             rois = np.array(list(zip(val['x'],val['y'])))
@@ -205,7 +364,28 @@ def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True
         col_size = col_filter.sum()
         nue_sub = col_filter * neuron # pixels occupied by neuron in the column
         cols_occ[key] =  nue_sub.sum(axis=(1,2,3))/col_size
+        # if normalize_cols:
+        #     lifetimes = cal_lifetimes(nue_sub, save=False,
+        #                               xy_pixel=0.076, z_pixel=0.4)
+        #     nue_sub_last = lifetimes[-1]
+        #     nue_sub_last[nue_sub_last<4] = 0
+        #     nue_sub_last = nue_sub_last.max(axis=0)
+        #     neu_PC = np.argwhere(nue_sub_last)
+        #     neu_PC = np.array([neu_PC[:,0],neu_PC[:,1],nue_sub_last[neu_PC[:,0],neu_PC[:,1]]]).T
+        #     x1 = norm_cols[key]['left']+int(norm_cols[key]['width']/2); 
+        #     a1 = int(norm_cols[key]['width']/2)  # x center, half width                                       
+        #     y1 = norm_cols[key]['top']+int(val['height']/2)
+        #     b1 = int(norm_cols[key]['height']/2)  # y center, half height                                      
+        #     for point in tqdm(neu_PC, desc='normalizing columns'):
+        #         y_f, x_f = transform_point(y=point[0], x=point[1], 
+        #                                     x0=x0, y0=y0, #center of ellipse1 
+        #                                     a0=a, b0=b, #major and minor of ellispe1
+        #                                     x1=x1, y1=y1, #center of ellipse2 (ref)
+        #                                     a1=a1, b1=b1)
+        #         norm_output[y_f, x_f] = point[-1]
     cols_occ = pd.DataFrame(cols_occ)
+    # if normalize_cols:
+    #     tif.imwrite(save_path+save_file+'_normalized_cols.tif', norm_output)
     if save_path != '' and save_path[-1] != '/':
         save_path += '/'
     if plot:
@@ -213,7 +393,10 @@ def col_occupancy(neuron, cols_zip, nor_fact=1, start_t=36, plot=True, save=True
         #ploting the results
         plt.figure(figsize=(8, 6), dpi=80)
         col_names = list(cols_occ.loc[:, cols_occ.columns != 'timepoints'].columns)
-        cols_occ.plot(x='my_timestampe', y=col_names, kind='line')
+        # for col in col_names:
+        #     print(col)
+        #     plt.plot(cols_occ.timepoints, cols_occ[col], label=col)
+        cols_occ.plot(x='timepoints', y=col_names, kind='line')
         # plt.plot(cols_occ.timepoints, cols_occ.loc[:, cols_occ.columns != 'timepoints'])
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.title('Column Occupancy')
