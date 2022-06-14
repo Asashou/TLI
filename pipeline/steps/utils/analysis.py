@@ -65,6 +65,7 @@ def stable_N(neuron, stab_limit=4, save=True, save_path='', save_file='', xy_pix
     stable_neuron[stable_neuron<stab_limit] = 0
     stable_neuron[stable_neuron>0] = 1
     if save == True:
+        stable_neuron = stable_neuron.astype('uint16')
         if save_path != '' and save_path[-1] != '/':
             save_path += '/'
         if save_file == '':
@@ -132,7 +133,7 @@ def vect_alpha(vect, ref=(0,1,0)):
     # print(vect_deg)
     return vect_deg
 
-def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save_file=''):
+def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_path='', save_file=''):
     """
     This function takes a 4D array of a neuron and calculates its directional growth indext (DGI) from the entry point based on the the formula:
 
@@ -145,6 +146,7 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     
     neuron:         4D array containing the dendrite to analyze. It should only contain parts of the dendrite.
     """
+    subtype = subtype.upper()
     pixel_co = np.argwhere(neuron>0)
     # shifting all points to make entry point the center of (0,0,0,0)
     norm_pixel_values = np.zeros(pixel_co.shape)
@@ -152,11 +154,12 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
     norm_pixel_values[:,2] *= -1 ##### to reverse the Y axis numbering upward 
     output = []
     for i in tqdm(range(int(max(norm_pixel_values[:,0])+1))):
-        # print('round', i)
         age = i*0.25+start_t
         timepoint = norm_pixel_values[norm_pixel_values[:,0]== i]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
         # timepoint = np.delete(timepoint,0,1) # deleting the Z compoenet/axis, WHY?
+        y_spread = timepoint[:,1].max() - timepoint[:,1].min()
+        x_spread = timepoint[:,2].max() - timepoint[:,2].min()
         vec_length = np.linalg.norm(timepoint, axis=1) # sum all points_vectors (maximum length)
         dbp_index = np.argwhere(vec_length == 0)
         timepoint = np.delete(timepoint, (dbp_index), axis=0)
@@ -166,19 +169,24 @@ def calculate_DGI(entry_point, neuron, start_t=36, save=True, save_path='', save
         Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
         av_vect = timepoint.mean(axis=0)
         av_vect_length = np.linalg.norm(av_vect)
-        # print(ori_vec)
-        ori_vec_deg = vect_alpha(ori_vec[:,])
+        ref_ax = {'A':(0,0,1), 'B':(0,0,-1), 'C':(0,-1,0), 'D':(0,1,0)}
+        ori_vec_deg = vect_alpha(ori_vec[:,], ref=ref_ax)
         # ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
         norm_px_deg = []
         for px in timepoint:
             norm_px_deg.append(vect_alpha(px) - ori_vec_deg)
         deg_variance = np.var(norm_px_deg)
+        PC_std = timepoint.std()
         # norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
         # deg_variance = norm_pixel_deg.var()
-        output.append([age,ori_vec,vec_length.sum(), av_vect, av_vect_length, ori_vec_deg,deg_variance,Dgi])
+        output.append([age,ori_vec,vec_length.sum(), 
+                        av_vect, av_vect_length, 
+                        ori_vec_deg,deg_variance,
+                        PC_std, Dgi,
+                        y_spread, x_spread])
     DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 
                     'av_vect', 'av_vect_length', 
-                    'ori_vec_deg', 'deg_variance', 'DGI']
+                    'ori_vec_deg', 'deg_variance', 'PC_std', 'DGI', 'y_spread', 'x_spread']
     DGIs = pd.DataFrame(output, columns=DGIs_columns)
 
     if save == True:
@@ -293,6 +301,29 @@ def transform_point(y=200, x=80,
             y_f, x_f = 0, 0
     return y_f, x_f
 
+def roi_img(img_nD, ROI_2D):
+    """
+    draw a 2D_mask from Fiji roi, broadcast it to a 3D_image and return the masked 3D_image
+    ROI_2D: is a fiji ROI
+    return the 3D_mask array and the masked nD_img
+    """
+    if ROI_2D['type'] == 'oval':
+        x0 = ROI_2D['left']+int(ROI_2D['width']/2); a = int(ROI_2D['width']/2)  # x center, half width                                       
+        y0 = ROI_2D['top']+int(ROI_2D['height']/2); b = int(ROI_2D['height']/2)  # y center, half height                                      
+        X = np.linspace(0, img_nD.shape[-1],img_nD.shape[-1])  # x values of interest
+        Y = np.linspace(0, img_nD.shape[-2],img_nD.shape[-2])[:,None]  # y values of interest, as a "column" array
+        mask_roi = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
+        mask_roi = mask_roi.astype(int)
+    elif ROI_2D['type'] == 'freehand':
+        rois = np.array(list(zip(ROI_2D['x'],ROI_2D['y'])))
+        rois = rois.astype(int)
+        mask_roi = np.zeros([img_nD.shape[-2],img_nD.shape[-1]])
+        mask_roi = cv2.fillPoly(mask_roi, pts =[rois], color=(255,255,255))
+        mask_roi[mask_roi>0] = 1
+    Roi_3D = np.broadcast_to(mask_roi, img_nD.shape)
+    masked_nD = Roi_3D * img_nD
+    return masked_nD, Roi_3D
+
 def col_occupancy(neuron, cols_zip, 
                   norm_cols, normalize_cols=False, 
                   nor_fact=1, start_t=36, plot=True, 
@@ -303,23 +334,28 @@ def col_occupancy(neuron, cols_zip,
     # if normalize_cols:
     #     norm_output = np.zeros_like(neuron[0,0])
     for key, val in tqdm(cols_zip.items()):
-        if val['type'] == 'oval':
-            x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
-            y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
-            X = np.linspace(0, neuron.shape[-1],neuron.shape[-1])  # x values of interest
-            Y = np.linspace(0, neuron.shape[-2],neuron.shape[-2])[:,None]  # y values of interest, as a "column" array
-            column = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
-            column = column.astype(int)
-        elif val['type'] == 'freehand':
-            rois = np.array(list(zip(val['x'],val['y'])))
-            rois = rois.astype(int)
-            column = np.zeros([neuron.shape[-2],neuron.shape[-1]])
-            column = cv2.fillPoly(column, pts =[rois], color=(255,255,255))
-            column[column>0] = 1
-        col_filter = np.broadcast_to(column, neuron.shape)
-        col_size = col_filter.sum()
-        nue_sub = col_filter * neuron # pixels occupied by neuron in the column
+        nue_sub, col_3D = roi_img(neuron, val)
+        col_size = col_3D.sum()
         cols_occ[key] =  nue_sub.sum(axis=(1,2,3))/col_size
+################# START REPLACED
+        # if val['type'] == 'oval':
+        #     x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
+        #     y0 = val['top']+int(val['height']/2); b = int(val['height']/2)  # y center, half height                                      
+        #     X = np.linspace(0, neuron.shape[-1],neuron.shape[-1])  # x values of interest
+        #     Y = np.linspace(0, neuron.shape[-2],neuron.shape[-2])[:,None]  # y values of interest, as a "column" array
+        #     column = ((X-x0)/a)**2 + ((Y-y0)/b)**2 <= 1  # True for points inside the ellipse
+        #     column = column.astype(int)
+        # elif val['type'] == 'freehand':
+        #     rois = np.array(list(zip(val['x'],val['y'])))
+        #     rois = rois.astype(int)
+        #     column = np.zeros([neuron.shape[-2],neuron.shape[-1]])
+        #     column = cv2.fillPoly(column, pts =[rois], color=(255,255,255))
+        #     column[column>0] = 1
+        # col_filter = np.broadcast_to(column, neuron.shape)
+        # col_size = col_filter.sum()
+        # nue_sub = col_filter * neuron # pixels occupied by neuron in the column
+        # cols_occ[key] =  nue_sub.sum(axis=(1,2,3))/col_size
+################# END REPLACED
         # if normalize_cols:
         #     lifetimes = cal_lifetimes(nue_sub, save=False,
         #                               xy_pixel=0.076, z_pixel=0.4)

@@ -91,7 +91,6 @@ def phase_corr_4D(image, sigma, xy_pixel=1,
                   save_file='', save_shifts=True):
     if isinstance(image, dict) == False:
         image = {ch_names[0]:image}
-    pre_shifts = {}
     if len(ch_names) == 1:
         ref_ch = ch_names[0]
     else:
@@ -100,10 +99,12 @@ def phase_corr_4D(image, sigma, xy_pixel=1,
         except:
             ref_ch = ch_names[-1]
     ref_im = image[ref_ch]
+    pre_shifts = {}
     current_shift = [0 for i in ref_im[0].shape]
     for ind in tqdm(np.arange(len(ref_im[1:])), desc='applying phase_corr'):
         pre_shifts[ind+1] = phase_corr(ref_im[ind], ref_im[ind+1], sigma) 
         current_shift = [sum(x) for x in zip(current_shift, pre_shifts[ind+1])] 
+        print(current_shift, pre_shifts[ind+1])
         for ch, img in image.items(): 
             image[ch][ind] = ndimage.shift(img[ind], current_shift) 
     if save == True:
