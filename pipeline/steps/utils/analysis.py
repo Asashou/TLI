@@ -1,5 +1,6 @@
 # from importlib.abc import Traversable
 from cProfile import label
+from re import L
 from timeit import default_timer as timer
 from turtle import shape
 from tqdm import tqdm
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 import tifffile as tif
 from read_roi import read_roi_zip as co_zip
 import cv2
+from scipy.spatial import ConvexHull, convex_hull_plot_2d
 
 def cal_lifetimes(neuron, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
     """
@@ -86,8 +88,8 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
     timepoints = [start_t+(i*0.25) for i in T_length] 
 
     output_volumes = pd.DataFrame({'timepoints':timepoints,
-                                    'vol_all':neuron.sum(axis=(1,2,3)), 
-                                    'vol_stable':stable.sum(axis=(1,2,3))})
+                                    'vol_all':neuron.sum(tuple(range(1, neuron.ndim))), 
+                                    'vol_stable':stable.sum(tuple(range(1, stable.ndim)))})
     
     if save_path != '' and save_path[-1] != '/':
         save_path += '/'
@@ -117,21 +119,44 @@ def vect_alpha(vect, ref=(0,1,0)):
     all vectors are assumed to start from center
     return angles calculated as numpy (N,1)
     """
-    # print(vect, ref)
     if len(vect.shape)>1:
         vect = vect.ravel()
-    # vec_norm = np.linalg.norm(vect, axis=1)
-    # unit_vector_1 = vect/vec_norm[:,None]
     unit_vector_1 = vect / np.linalg.norm(vect)
     unit_vector_2 = ref / np.linalg.norm(ref)
     dot_product = np.dot(unit_vector_1, unit_vector_2)
-    # dot_product = np.dot(unit_vector_1, unit_vector_2)
     angle = np.arccos(dot_product)
     vect_deg = np.degrees(angle)
-    if vect[-1]<0:
-        vect_deg = 360 - vect_deg
-    # print(vect_deg)
+    # if vect[-1]<0:
+    #     vect_deg = 360 - vect_deg
     return vect_deg
+
+def cal_circularity(img_3D):
+    """
+    the image is TYZ"""
+    img_3D[img_3D!=0] = 1
+    circularity = []
+    density = []
+    area = []
+    perimeter = []
+    for st in img_3D:
+        img_PC = np.argwhere(st)
+        try:
+            for i in [1]:
+                # area.append(hull.volume)
+                # perimeter.append(hull.area)
+                hull = ConvexHull(img_PC, qhull_options='Qc')
+                circ2 = 4*np.pi *hull.volume/(hull.area**2)
+                circularity.append(circ2)
+                density.append(st.sum()/hull.volume)
+                a, b = hull.volume, hull.area
+                area.append(a)
+                perimeter.append(b)
+        except:
+            area.append(0)
+            perimeter.append(0)
+            circularity.append(0)
+            density.append(0)
+    return area, perimeter, density, circularity
 
 def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_path='', save_file=''):
     """
@@ -158,32 +183,43 @@ def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_
         timepoint = norm_pixel_values[norm_pixel_values[:,0]== i]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
         # timepoint = np.delete(timepoint,0,1) # deleting the Z compoenet/axis, WHY?
-        y_spread = timepoint[:,1].max() - timepoint[:,1].min()
-        x_spread = timepoint[:,2].max() - timepoint[:,2].min()
-        vec_length = np.linalg.norm(timepoint, axis=1) # sum all points_vectors (maximum length)
-        dbp_index = np.argwhere(vec_length == 0)
-        timepoint = np.delete(timepoint, (dbp_index), axis=0)
-        vec_length = np.delete(vec_length, dbp_index)
-        ori_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
-        ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
-        Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
-        av_vect = timepoint.mean(axis=0)
-        av_vect_length = np.linalg.norm(av_vect)
-        ref_ax = {'A':(0,0,1), 'B':(0,0,-1), 'C':(0,-1,0), 'D':(0,1,0)}
-        ori_vec_deg = vect_alpha(ori_vec[:,], ref=ref_ax)
-        # ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
-        norm_px_deg = []
-        for px in timepoint:
-            norm_px_deg.append(vect_alpha(px) - ori_vec_deg)
-        deg_variance = np.var(norm_px_deg)
-        PC_std = timepoint.std()
-        # norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
-        # deg_variance = norm_pixel_deg.var()
-        output.append([age,ori_vec,vec_length.sum(), 
-                        av_vect, av_vect_length, 
-                        ori_vec_deg,deg_variance,
-                        PC_std, Dgi,
-                        y_spread, x_spread])
+        if len(timepoint) != 0:
+            y_spread = timepoint[:,-2].max() - timepoint[:,-2].min()
+            x_spread = timepoint[:,-1].max() - timepoint[:,-1].min()
+            vec_length = np.linalg.norm(timepoint, axis=1) # sum all points_vectors (maximum length)
+            dbp_index = np.argwhere(vec_length == 0)
+            timepoint = np.delete(timepoint, (dbp_index), axis=0)
+            vec_length = np.delete(vec_length, dbp_index)
+            ori_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
+            ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
+            Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
+            av_vect = timepoint.mean(axis=0)
+            av_vect_length = np.linalg.norm(av_vect)
+            # ref_ax = {'A':(0,0,1), 'B':(0,0,-1), 'C':(0,-1,0), 'D':(0,1,0)}
+            # ref_ax_2D = {'A':(0,1), 'B':(0,-1), 'C':(-1,0), 'D':(1,0)}
+            ref_ax = {'A':(0,0,1), 'B':(0,0,1), 'C':(0,0,1), 'D':(0,0,1)}
+            ref_ax_2D = {'A':(0,1), 'B':(0,1), 'C':(0,1), 'D':(0,1)}
+            try:
+                ori_vec_deg = vect_alpha(ori_vec[:,], ref=ref_ax[subtype])
+            except:
+                ori_vec_deg = vect_alpha(ori_vec[:,], ref=ref_ax_2D[subtype])
+            # ori_vec_deg = vect_alpha(ori_vec[:,None].T)[0][0]
+            norm_px_deg = []
+            for px in timepoint:
+                try:
+                    px_deg = vect_alpha(px, ref=ref_ax[subtype])
+                except:
+                    px_deg = vect_alpha(px, ref=ref_ax_2D[subtype])
+                norm_px_deg.append(px_deg - ori_vec_deg)
+            deg_variance = np.var(norm_px_deg)
+            PC_std = timepoint.std()
+            # norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
+            # deg_variance = norm_pixel_deg.var()
+            output.append([age,ori_vec,vec_length.sum(), 
+                            av_vect, av_vect_length, 
+                            ori_vec_deg,deg_variance,
+                            PC_std, Dgi,
+                            y_spread, x_spread])
     DGIs_columns = ['timepoints', 'ori_vec', 'Max_Vec_length', 
                     'av_vect', 'av_vect_length', 
                     'ori_vec_deg', 'deg_variance', 'PC_std', 'DGI', 'y_spread', 'x_spread']
@@ -196,7 +232,6 @@ def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_
         DGIs.to_csv(csv_file, sep=';')
     
     return DGIs
-
 
 def transform_point(y=200, x=80, 
                     x0=80, y0=120, #center of ellipse1 
@@ -336,7 +371,7 @@ def col_occupancy(neuron, cols_zip,
     for key, val in tqdm(cols_zip.items()):
         nue_sub, col_3D = roi_img(neuron, val)
         col_size = col_3D.sum()
-        cols_occ[key] =  nue_sub.sum(axis=(1,2,3))/col_size
+        cols_occ[key] =  nue_sub.sum(tuple(range(1, nue_sub.ndim)))/col_size
 ################# START REPLACED
         # if val['type'] == 'oval':
         #     x0 = val['left']+int(val['width']/2); a = int(val['width']/2)  # x center, half width                                       
