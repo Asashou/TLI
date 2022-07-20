@@ -233,6 +233,58 @@ def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_
     
     return DGIs
 
+def trans_DGI(entry_point, neuron, stable, subtype='a', start_t=36, save=True, save_path='', save_file=''):
+    """
+    This function takes a 4D array of a neuron and calculates its directional growth indext (DGI) from the entry point based on the the formula:
+
+    DGI = length(V)/length(sum(|Vi|))
+
+    It returns a datafram containing the values of the orientation vector for each time point.
+    
+    Parameter:
+    entry_point:    Array with 4 values that correspond to the entry point of the dendrite into the neuropil. Values correspond to the 'TZYX' coordinates of the point.
+    
+    neuron:         4D array containing the dendrite to analyze. It should only contain parts of the dendrite.
+    """
+    neuron[neuron!=0] = 1
+    stable[stable!=0] = 1
+    trans_img = neuron - stable
+    trans_PC = np.argwhere(trans_img>0)
+    trans_PC = trans_PC - entry_point
+    output = []
+    for i in tqdm(range(int(max(trans_PC[:,0])+1))):
+        age = i*0.25+start_t
+        timepoint = trans_PC[trans_PC[:,0]== i]
+        timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
+        trans_vol = len(timepoint)
+        trans_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
+        trans_max = timepoint[np.argmax(abs(timepoint).sum(axis=1))]
+        ref_ax = {'A':(0,0,1), 'B':(0,0,-1), 'C':(0,-1,0), 'D':(0,1,0)}
+        ref_ax_2D = {'A':(0,1), 'B':(0,-1), 'C':(-1,0), 'D':(1,0)}
+        # ref_ax = {'A':(0,0,1), 'B':(0,0,1), 'C':(0,0,1), 'D':(0,0,1)}
+        # ref_ax_2D = {'A':(0,1), 'B':(0,1), 'C':(0,1), 'D':(0,1)}
+        try:
+            for i in [1]:
+                trans_vec_deg = vect_alpha(trans_vec[:,], ref=ref_ax[subtype])
+                furthest_vec_deg = vect_alpha(trans_max[:,], ref=ref_ax[subtype])
+        except:
+            for i in [1]:
+                trans_vec_deg = vect_alpha(trans_vec[:,], ref=ref_ax_2D[subtype])
+                furthest_vec_deg = vect_alpha(trans_max[:,], ref=ref_ax_2D[subtype])
+        output.append([age,trans_vol, 
+                    trans_vec, trans_vec_deg, 
+                    trans_max,furthest_vec_deg])
+    DGIs_columns = ['timepoints', 'trans_vol', 
+                    'trans_vec', 'trans_vec_deg', 
+                    'trans_max','furthest_vec_deg']
+    trans_DGIs = pd.DataFrame(output, columns=DGIs_columns)
+    if save == True:
+        if save_file == '':
+            save_file = "trans_DGIs.csv"
+        csv_file = save_path+save_file
+        trans_DGIs.to_csv(csv_file, sep=';')
+    return trans_DGIs
+
 def transform_point(y=200, x=80, 
                     x0=80, y0=120, #center of ellipse1 
                     a0=50, b0=100, #major and minor of ellispe1
