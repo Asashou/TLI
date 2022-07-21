@@ -211,7 +211,7 @@ def calculate_DGI(entry_point, neuron, subtype='a', start_t=36, save=True, save_
                 except:
                     px_deg = vect_alpha(px, ref=ref_ax_2D[subtype])
                 norm_px_deg.append(px_deg - ori_vec_deg)
-            deg_variance = np.var(norm_px_deg)
+            deg_variance = norm_px_deg.std()
             PC_std = timepoint.std()
             # norm_pixel_deg = vect_alpha(timepoint) - ori_vec_deg
             # deg_variance = norm_pixel_deg.var()
@@ -257,6 +257,7 @@ def trans_DGI(entry_point, neuron, stable, subtype='a', start_t=36, save=True, s
         timepoint = trans_PC[trans_PC[:,0]== i]
         timepoint = np.delete(timepoint,0,1) # deleting the time compoenet/axis?
         trans_vol = len(timepoint)
+        trans_std = timepoint.std()
         trans_vec = timepoint.sum(axis=0) #calculate (Z,Y,X) of vector sum
         trans_max = timepoint[np.argmax(abs(timepoint).sum(axis=1))]
         ref_ax = {'A':(0,0,1), 'B':(0,0,-1), 'C':(0,-1,0), 'D':(0,1,0)}
@@ -271,10 +272,10 @@ def trans_DGI(entry_point, neuron, stable, subtype='a', start_t=36, save=True, s
             for i in [1]:
                 trans_vec_deg = vect_alpha(trans_vec[:,], ref=ref_ax_2D[subtype])
                 furthest_vec_deg = vect_alpha(trans_max[:,], ref=ref_ax_2D[subtype])
-        output.append([age,trans_vol, 
+        output.append([age,trans_vol, trans_std, 
                     trans_vec, trans_vec_deg, 
                     trans_max,furthest_vec_deg])
-    DGIs_columns = ['timepoints', 'trans_vol', 
+    DGIs_columns = ['timepoints', 'trans_vol', 'trans_std'
                     'trans_vec', 'trans_vec_deg', 
                     'trans_max','furthest_vec_deg']
     trans_DGIs = pd.DataFrame(output, columns=DGIs_columns)
