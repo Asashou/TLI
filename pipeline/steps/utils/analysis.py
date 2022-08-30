@@ -113,7 +113,7 @@ def N_volume(neuron, stable=np.zeros((1)), normalize=False, start_t=36, plot=Tru
         output_volumes.to_csv(csv_file, sep=';')
     return output_volumes
 
-def vect_alpha(vect, ref=(0,1,0)):
+def vect_alpha(vect, ref=(0,1,0), circ=360):
     """
     This function takes a point cloud of (N,D) and calculates the angles between these vectors and the ref vector (tuple)
     all vectors are assumed to start from center
@@ -124,10 +124,11 @@ def vect_alpha(vect, ref=(0,1,0)):
     unit_vector_1 = vect / np.linalg.norm(vect)
     unit_vector_2 = ref / np.linalg.norm(ref)
     dot_product = np.dot(unit_vector_1, unit_vector_2)
-    angle = np.arccos(dot_product)
-    vect_deg = np.degrees(angle)
-    # if vect[-1]<0:
-    #     vect_deg = 360 - vect_deg
+    angles = np.arccos(dot_product)
+    vect_deg = np.degrees(angles)
+    if circ == 360:
+        if vect[-1]<0:
+            vect_deg = 360 - vect_deg
     return vect_deg
 
 def cal_circularity(img_3D):
