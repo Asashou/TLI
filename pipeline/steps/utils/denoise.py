@@ -3,7 +3,7 @@ import os
 import cv2 as cv
 import numpy as np 
 import tifffile as tif
-from n2v.models import N2V
+# from n2v.models import N2V
 from tqdm import tqdm
 # from skimage.filters import gaussian, threshold_otsu
 from skimage.filters import gaussian, threshold_otsu
