@@ -63,59 +63,68 @@ def metric_dump(image,entry_point,plot=False):
 
     """
     coords = (np.argwhere(image) - entry_point).T
-    cov = np.cov(coords)
-    evals, evecs = np.linalg.eig(cov)
+    coords = np.vstack((coords[1],coords[0]))
+
+    # find the covariance matrix:
+    cov_mat = np.cov(coords)
+
+    # get eigen vectors and values
+    evals, evecs = np.linalg.eig(cov_mat)
+
+    # get the order of the eigen values and sort the eigenvectors
     sort_indices = np.argsort(evals)[::-1]
-    y_v1, x_v1 = evecs[:, sort_indices[0]]  # Eigenvector with largest eigenvalue
-    y_v2, x_v2 = evecs[:, sort_indices[1]]
-    # # calculate the angle of rotation of the eigenvectors relative to the original coordinate space and get the rotation matrix
+    x_v1, y_v1 = evecs[:, sort_indices[0]]  # Eigenvector with largest eigenvalue
+    x_v2, y_v2 = evecs[:, sort_indices[1]]
+
+    # calculate the angle of rotation of the eigenvectors relative to the original coordinate space and get the rotation matrix
     theta = np.arctan((x_v1)/(y_v1))  
     rotation_mat = np.matrix([[np.cos(theta), -np.sin(theta)],
                         [np.sin(theta), np.cos(theta)]])
 
     inv_rot_mat = np.linalg.inv(rotation_mat)
 
-    # # rotate the original coordinates
+    # rotate the original coordinates
     rotated_coords = rotation_mat * coords
 
-    # # plot the transformed blob
-    y_transformed, x_transformed = rotated_coords.A
+    # plot the transformed blob
+    x_transformed, y_transformed = rotated_coords.A
 
-    # # we want the minimum and maximum values along each axis
+    # we want the minimum and maximum values along each axis
     x_max = np.max(x_transformed)
     x_min = np.min(x_transformed)
     y_max = np.max(y_transformed)
     y_min = np.min(y_transformed)
 
-    # # the fraction of pixels in each direction
+    # the fraction of pixels in each direction
     frac_x_pos = len(x_transformed[x_transformed>0])/len(x_transformed)
     frac_x_neg = 1 - frac_x_pos
     frac_y_pos = len(y_transformed[y_transformed>0])/len(y_transformed)
     frac_y_neg = 1 - frac_y_pos
 
-    # # The difference
+    # The difference
     diff_x = abs(frac_x_pos - frac_x_neg)
     diff_y = abs(frac_y_pos - frac_y_neg)
 
-    # # then the difference times the fraction in that direction
+    # then the difference times the fraction in that direction
     x_pos = diff_x * frac_x_pos
     x_neg = diff_x * frac_x_neg
     y_pos = diff_y * frac_y_pos
     y_neg = diff_y * frac_y_neg
 
-    # # and finally, multiply by the scalar value from the first point. 
+    # and finally, multiply by the scalar value from the first point. 
     final_x_pos = x_max * x_pos
     final_x_neg = x_min * x_neg
     final_y_pos = y_max * y_pos
     final_y_neg = y_min * y_neg
 
-    # ## sort out the vectors - we have the points, and the origin is [0,0], so rotate the second point by -theta degrees
+    ## sort out the vectors - we have the points, and the origin is [0,0], so rotate the second point by -theta degrees
+
     x_pos_final = rotate(origin = [0,0], point = [final_x_pos,0], angle = theta, direction = 'clockwise')
     x_neg_final = rotate(origin = [0,0], point = [final_x_neg,0], angle = theta, direction = 'clockwise')
     y_pos_final = rotate(origin = [0,0], point = [0,final_y_pos], angle = theta, direction = 'clockwise')
     y_neg_final = rotate(origin = [0,0], point = [0,final_y_neg], angle = theta, direction = 'clockwise')
 
-    # # get angle of each vector
+    # get angle of each vector
     x_pos_angle = angle_between([0,0],x_pos_final)
     x_neg_angle = angle_between([0,0], x_neg_final)
     y_pos_angle = angle_between([0,0], y_pos_final)
@@ -128,13 +137,25 @@ def metric_dump(image,entry_point,plot=False):
                                 'xy': [x_pos_final,x_neg_final,y_pos_final,y_neg_final]})
 
     asymmetry = (diff_x + diff_y)/2
+    x_asymmetry = min(frac_x_neg,frac_x_pos)*min(x_max,abs(x_min))/(max(frac_x_neg,frac_x_pos)*max(x_max,abs(x_min)))
+    y_asymmetry = min(frac_y_neg,frac_y_pos)*min(y_max,abs(y_min))/(max(frac_y_neg,frac_y_pos)*max(y_max,abs(y_min)))
+    x_scale = x_pos+abs(x_neg)
+    y_scale = y_pos+abs(y_neg)
+    if x_scale > y_scale:
+        PC1_asymmetry = x_asymmetry
+        PC2_asymmetry = y_asymmetry
+    else:
+        PC1_asymmetry = y_asymmetry
+        PC2_asymmetry = x_asymmetry
+    
+    asymmetries = [asymmetry, x_asymmetry, y_asymmetry, PC1_asymmetry, PC2_asymmetry]
 
     if plot:
         x, y = coords[0], coords[1]
-        cent_x = sum(rotated_coords.A.T[:,0]) / len(rotated_coords.A.T)
-        cent_y = (sum(rotated_coords.A.T[:,1]) / len(rotated_coords.A.T))
+        cent_x = x_transformed.mean()
+        cent_y = y_transformed.mean()
         scale = 20
-        plt.plot(x, y, 'k.',alpha=0.2)
+        plt.scatter(x, y, marker='.',c='k',alpha=0.2)
         plt.plot([x_v1*-scale*2, x_v1*scale*2],
                 [y_v1*-scale*2, y_v1*scale*2], color='red')
         plt.plot([x_v2*-scale, x_v2*scale],
@@ -146,8 +167,9 @@ def metric_dump(image,entry_point,plot=False):
         # x_transformed, y_transformed = transformed_mat.A
         plt.plot(x_transformed, y_transformed, 'g.',alpha=0.1)
         plt.scatter(cent_x,cent_y,c='k')
+        plt.text(cent_x+5,cent_y+5,'centroid')
         plt.axis('equal')
         plt.gca().invert_yaxis()  # Match the image system with origin at top left
         plt.show()
 
-    return asymmetry, df, rotated_coords.A.T
+    return asymmetries, df, rotated_coords.A.T
