@@ -1,7 +1,65 @@
+# from importlib.abc import Traversable
+from cProfile import label
+from re import L
+from timeit import default_timer as timer
+from turtle import shape
+from tqdm import tqdm
 import numpy as np
+import utils.datautils as datautils
+import os
 import matplotlib.pyplot as plt
+from textwrap import wrap
+import csv
 import pandas as pd
+import matplotlib.pyplot as plt
+import tifffile as tif
+from read_roi import read_roi_zip as co_zip
+import cv2
+from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import math
+
+
+def cal_lifetimes(neuron, save=True, save_path='', save_file='', xy_pixel=1, z_pixel=1):
+    """
+    This function takes a 4D array as an input and calculates the lifetimes of the pixels over time. 
+    The array should only contain the pixels that are part of the dendrite.
+    It first binarizes the image then multiplies the previous to the current volume to see if the pixel survived.
+    Afterwards it adds the volume of the binary image of the current index to the last volume, thereby increasing
+    the count of each pixel that is still "alive".
+    
+    Parameter:
+    ------------------
+    neuron: 4D array of dendrite
+    
+    Returns:
+    -------------------
+    
+    neuron_lifetimes: 4D array of the same shape as the input array but with pixel values as their lifetimes in every stack.
+    """
+    
+    neuron_lifetimes = np.empty(neuron.shape)
+    neuron_binary = neuron.copy()
+    
+    neuron_binary[neuron_binary > 0] = 1
+    neuron_lifetimes[0] = neuron_binary[0]
+    
+    for i in tqdm(range(1,neuron_binary.shape[0])):
+        current_lifetimes = (neuron_binary[i]*neuron_lifetimes[i-1]) + neuron_binary[i]
+        neuron_lifetimes[i] = current_lifetimes
+
+    if save == True:
+        if save_path != '' and save_path[-1] != '/':
+            save_path += '/'
+        if save_file == '':
+            save_name = str(save_path+'stable_image.tif')
+        else:
+            save_name = str(save_path+'stable_'+save_file)
+        if '.tif' not in save_name:
+            save_name +='.tif'
+        datautils.save_image(save_name, neuron_lifetimes, xy_pixel=xy_pixel, z_pixel=z_pixel)
+
+    return neuron_lifetimes
+
 
 def DGI_3D(image, entry_point):
     """
