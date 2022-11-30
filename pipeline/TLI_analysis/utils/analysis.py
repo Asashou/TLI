@@ -140,7 +140,9 @@ def metric_dump(image,entry_point,plot=False):
     x_v2, y_v2 = evecs[:, sort_indices[1]]
 
     # calculate the angle of rotation of the eigenvectors relative to the original coordinate space and get the rotation matrix
-    theta = np.arctan((x_v1)/(y_v1))  
+    # theta = abs(np.arctan((x_v1)/(y_v1)))
+    theta = np.arctan((x_v1)/(y_v1))
+    # print(theta)
     rotation_mat = np.matrix([[np.cos(theta), -np.sin(theta)],
                         [np.sin(theta), np.cos(theta)]])
 
@@ -238,3 +240,156 @@ def metric_dump(image,entry_point,plot=False):
         plt.show()
 
     return asymmetries, df, rotated_coords.A.T, evals
+
+
+
+def transform_point(y=200, x=80, 
+                    x0=0, y0=0, #center of ellipse1 
+                    a0=50, b0=100, #major and minor of ellispe1
+                    x1=0, y1=0, #center of ellipse2 (ref)
+                    a1=20, b1=40, # major and minor of ellipse2
+                    X_length=150, #X_dim of final array
+                    Y_length=250): #Y_dim of final array
+    """
+    This function transform the  y,x coordinates of a point in ellipse1 
+    to y_f,x_f coordinate of the corresponding point in ellipse2
+    INPUT: y,x coordinates of the point in ellipse1 
+           y0,x0,a0,b0 center and dimaters of ellipse1 
+           y1,x1,a1,b1 center and dimaters of ellipse2
+    Returns y_f, x_f coordinates of the corresponding point in ellipse2
+    NOTE: the point has to be inside the ellipse1 and not on the boarder
+    """
+
+    #definning start point for calculating angle
+    S_radian = np.radians(0)
+    Sy0, Sx0 = int(y0+b0*np.sin(S_radian)), int(x0+a0*np.cos(S_radian))
+    
+    #getting angle (in radians) between start and point-of-interest
+    vect, ref = (y-y0,x-x0), (Sy0-y0,Sx0-x0)
+    unit_vector_1 = vect/np.linalg.norm(vect)
+    unit_vector_2 = ref / np.linalg.norm(ref)
+    dot_product = np.dot(unit_vector_1, unit_vector_2)
+    p_radian = np.arccos(dot_product)
+    p_deg = np.degrees(p_radian)
+    #finding the cross point in ellipse1 based on the angle, center and diameters
+    if p_deg == 90.0:
+        Px0 = x0
+        if y > y0:
+            Py0 = y0 + b0
+        else:
+            Py0 = y0 - b0
+    else:
+        try:
+            for i in [0]:
+                if vect[-1]<0:
+                    Px0 = int(x0-a0*b0/(np.sqrt(b0**2+a0**2*np.tan(p_radian)**2))) 
+                else:
+                    Px0 = int(x0+a0*b0/(np.sqrt(b0**2+a0**2*np.tan(p_radian)**2))) 
+                if vect[0]<0:
+                    Py0 = y0-int(np.sqrt((np.tan(p_radian)*(Px0-x0))**2))
+                else:
+                    Py0 = y0+int(np.sqrt((np.tan(p_radian)*(Px0-x0))**2))
+        except:
+            for i in [0]:
+                print('failed at step Px0 because radian', p_radian, y,x)
+                Px0 = 0
+                Py0 = 0
+    # calculating ratio of point length to cross length
+    cross = (Py0-y0,Px0-x0)
+    vect_length = np.linalg.norm(vect)
+    cross_length = np.linalg.norm(cross)
+    ratio = vect_length/cross_length 
+
+    #finding the cross point in ellipse2 based on the angle, center and diameters
+    if p_deg == 90.0:
+        Px1 = x1
+        if y > y1:
+            Py1 = y1 + b1
+        else:
+            Py1 = y1 - b1
+    else:
+        try:
+            for i in [0]:
+                if vect[-1]<0:
+                    Px1 = x1-int(a1*b1/(np.sqrt(b1**2+a1**2*np.tan(p_radian)**2))) 
+                else:
+                    Px1 = x1+int(a1*b1/(np.sqrt(b1**2+a1**2*np.tan(p_radian)**2))) 
+                if vect[0]<0:
+                    Py1 = y1-int(np.tan(p_radian)*(Px1-x1))
+                else:
+                    Py1 = y1+int(np.tan(p_radian)*(Px1-x1))
+        except:
+            for i in [0]:
+                print("this point didn't work", p_radian, x, y)
+                Px1 = 0
+                Py1 = 0
+    
+    # calculating cross point to ellipse2 and point_length
+    cross2 = (Py1-y1,Px1-x1)
+    cross2_length = np.linalg.norm(cross2)
+    vect2_length = ratio*cross2_length
+
+    # x_f, x_f coordinated of the transformed point from ellipse1 to ellipse2
+    try:
+        for i in [0]:
+            if Py1 < y1:
+                y_f = y1-int(vect2_length*np.sqrt(np.sin(p_radian)**2))
+            else:
+                y_f = y1+int(vect2_length*np.sqrt(np.sin(p_radian)**2))
+            if Px1 < x1:
+                x_f = x1-int(vect2_length*np.sqrt(np.cos(p_radian)**2))
+            else:
+                x_f = x1+int(vect2_length*np.sqrt(np.cos(p_radian)**2))
+    except:
+        for i in [0]:
+            print("this point wasn't transformed", x, y)
+            y_f, x_f = 0, 0
+    return y_f, x_f
+
+
+def transform_point2(theta=0, y=200, x=80, 
+                    x0=0, y0=0, #center of ellipse1 
+                    a0=50, b0=100, #major and minor of ellispe1
+                    x1=0, y1=0, #center of ellipse2 (ref)
+                    a1=20, b1=40, # major and minor of ellipse2
+                    X_length=150, #X_dim of final array
+                    Y_length=250): #Y_dim of final array
+
+                    """
+                    This function transform the  y,x coordinates of a point in ellipse1 
+                    to y_f,x_f coordinate of the corresponding point in ellipse2
+                    INPUT: y,x coordinates of the point in ellipse1 
+                        y0,x0,a0,b0 center and dimaters of ellipse1 
+                        y1,x1,a1,b1 center and dimaters of ellipse2
+                    Returns y_f, x_f coordinates of the corresponding point in ellipse2
+                    NOTE: the point has to be inside the ellipse1 and not on the boarder
+                    """
+                    # find angle and distance of the point (y,x) from the center of ellipse1
+                    p1 = (y-y0,x-x0)
+                    p1_theta = np.arctan2(*p1)+theta
+                    p1_dist = np.linalg.norm(p1)
+                    
+                    # find the coordinates and distance of edge point on ellipse1 that has the same angle/p1_theta
+                    edge1_x = (x/abs(x)) * (a0*b0/np.sqrt((a0**2+b0**2*np.tan(p1_theta)**2))+x0)
+                    edge1_y = (y/abs(y)) * (np.sqrt(1- (edge1_x/b0)**2)*a0+y0)
+                    edge1_dist = np.linalg.norm((edge1_y-y0,edge1_x-x0))
+
+                    # find the coordinates and distance of edge point on ellipse2 that has the same angle/p1_theta
+                    edge2_x = (x/abs(x)) * (a1*b1/np.sqrt((a1**2+b1**2*np.tan(p1_theta)**2))+x1)
+                    edge2_y = (y/abs(y)) * (np.sqrt(1- (edge2_x/b1)**2)*a1+y1)
+                    # edge2_x = a1*b1/np.sqrt((a1**2+b1**2+np.tan(p1_theta)**2))+x1
+                    # edge2_y = edge2_x*np.tan(p1_theta)
+                    edge2_dist = np.linalg.norm((edge2_y-y1,edge2_x-x1))
+
+                    # find ratio of p1_dist to edge1_dist
+                    dist_ratio = p1_dist/edge1_dist
+                    print(dist_ratio, p1_dist, edge1_dist)
+
+                    # find corresponding distance of the point in ellipse2
+                    dist = edge2_dist * dist_ratio
+
+                    # find coordinates of the point in ellipse2
+                    x_f = dist*np.cos(p1_theta)+x1
+                    y_f = dist*np.sin(p1_theta)+y1
+
+                    return y_f, x_f, dist_ratio
