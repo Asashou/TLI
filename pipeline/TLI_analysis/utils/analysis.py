@@ -47,6 +47,8 @@ def cal_lifetimes(neuron, save=True, save_path='', save_file='', xy_pixel=1, z_p
         current_lifetimes = (neuron_binary[i]*neuron_lifetimes[i-1]) + neuron_binary[i]
         neuron_lifetimes[i] = current_lifetimes
 
+    neuron_lifetimes = neuron_lifetimes.astype('uint8')
+    
     if save == True:
         if save_path != '' and save_path[-1] != '/':
             save_path += '/'
@@ -75,6 +77,7 @@ def DGI_3D(image, entry_point):
     neuron:         4D array containing the dendrite to analyze. It should only contain parts of the dendrite.
     """
     pixel_co = np.argwhere(image)
+    entry_point = np.array(entry_point)
     # shifting all points to make entry point the center of (0,0,0)
     norm_pixel_values = pixel_co - entry_point
     norm_pixel_values[:,1] *= -1 ##### to reverse the Y axis numbering upward 
@@ -83,11 +86,13 @@ def DGI_3D(image, entry_point):
     norm_pixel_values = np.delete(norm_pixel_values, (dbp_index), axis=0)
     vec_length = np.delete(vec_length, dbp_index)
     ori_vec = norm_pixel_values.sum(axis=0) #calculate (Z,Y,X) of vector sum
+    # p1 = np.array(ori_vec[1:])-entry_point[1:]
+    ori_vec_angle = np.arctan2(*np.array(ori_vec[1:])) #calculate angle of ori_vex
     ori_vec_length = np.linalg.norm(ori_vec) #Calculate the length of vector sum
     Dgi = ori_vec_length/vec_length.sum() #calculate DGI which is maximum_length/length_vect_sum 
     av_vect = norm_pixel_values.mean(axis=0)
     av_vect_length = np.linalg.norm(av_vect)   
-    return Dgi
+    return Dgi, ori_vec_angle
 
 def rotate(origin, point, angle, direction = 'counterclockwise'):
     """
@@ -121,7 +126,7 @@ def metric_dump(image,entry_point,plot=False):
 
     """
     coords = (np.argwhere(image) - entry_point).T
-    coords = np.vstack((coords[1],coords[0]))
+    coords = np.vstack((coords[1],-1*coords[0]))
 
     # find the covariance matrix:
     cov_mat = np.cov(coords)
@@ -146,6 +151,8 @@ def metric_dump(image,entry_point,plot=False):
 
     # plot the transformed blob
     x_transformed, y_transformed = rotated_coords.A
+    trans_cen = np.array((y_transformed.mean(), x_transformed.mean()))
+    PC1_cen_angle = np.arctan2(*trans_cen) 
 
     # we want the minimum and maximum values along each axis
     x_max = np.max(x_transformed)
@@ -230,4 +237,4 @@ def metric_dump(image,entry_point,plot=False):
         plt.gca().invert_yaxis()  # Match the image system with origin at top left
         plt.show()
 
-    return asymmetries, df, rotated_coords.A.T
+    return asymmetries, df, rotated_coords.A.T, evals
