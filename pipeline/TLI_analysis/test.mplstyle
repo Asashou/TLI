@@ -1,5 +1,5 @@
 ### FIGURE
-figure.figsize:     9.5, 5  # figure size in inches
+figure.figsize:     9.5, 7  # figure size in inches
 figure.dpi:         200 
 figure.facecolor:   None     # figure face color
 figure.edgecolor:   None     # figure edge color

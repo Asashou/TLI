@@ -125,8 +125,11 @@ def metric_dump(image,entry_point,plot=False):
     """
 
     """
-    coords = (np.argwhere(image) - entry_point).T
-    coords = np.vstack((coords[1],-1*coords[0]))
+    img_PC = np.argwhere(image)
+    img_PC = img_PC - entry_point
+    img_PC[:,0] *= -1
+    coords = img_PC.T
+    coords = np.vstack((coords[1],coords[0]))
 
     # find the covariance matrix:
     cov_mat = np.cov(coords)
